@@ -276,6 +276,7 @@ int BrowserProcessHandler::RpcServerThread(void* browserProcessHandlerPtr) {
         std::optional<HWND> clientMessageWindowHandle = browserProcessHandler
             ->GetClientMessageWindowHandle();
         if (clientMessageWindowHandle.has_value()) {
+          NET_WaitUntilStreamSocketDrained(streamSocket, -1);
           PostMessageW(clientMessageWindowHandle.value(), WM_USER, 0, 0);
         }
     }
