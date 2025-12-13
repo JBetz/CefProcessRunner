@@ -69,23 +69,25 @@ inline void to_json(json& j, const CefCursorInfo& m) {
 }
 
 // Request messages
-struct InitializeRequest {
+struct InitializeClientRequest {
   UUID id;
   int clientProcessId;
+  uintptr_t clientMessageWindowHandle;
 };
 
-inline void from_json(const json& j, InitializeRequest& m) {
+inline void from_json(const json& j, InitializeClientRequest& m) {
   j.at("id").get_to(m.id);
   j.at("clientProcessId").get_to(m.clientProcessId);
+  j.at("clientMessageWindowHandle").get_to(m.clientMessageWindowHandle);
 }
 
-struct InitializeResponse {
+struct InitializeClientResponse {
   UUID id;
 };
 
-inline void to_json(json& j, const InitializeResponse& m) {
+inline void to_json(json& j, const InitializeClientResponse& m) {
   j = json::object();
-  j["type"] = "InitializeResponse";
+  j["type"] = "InitializeClientResponse";
   j["id"] = m.id;
 }
 

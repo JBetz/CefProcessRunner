@@ -59,6 +59,10 @@ std::optional<HANDLE> BrowserProcessHandler::GetClientProcessHandle() {
   return this->clientProcessHandle;
 }
 
+std::optional<HWND> BrowserProcessHandler::GetClientMessageWindowHandle() {
+  return this->clientMessageWindowHandle;
+}
+
 void BrowserProcessHandler::OpenClientProcessHandle(int processId) {
   HANDLE handle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, processId);
   if (handle == NULL) {
@@ -66,6 +70,10 @@ void BrowserProcessHandler::OpenClientProcessHandle(int processId) {
   } else {
     this->clientProcessHandle = std::make_optional(handle);
   }
+}
+
+void BrowserProcessHandler::SetClientMessageWindowHandle(HWND windowHandle) {
+  this->clientMessageWindowHandle = std::make_optional(windowHandle);
 }
 
 void BrowserProcessHandler::OnContextInitialized() {
@@ -265,6 +273,11 @@ int BrowserProcessHandler::RpcServerThread(void* browserProcessHandlerPtr) {
           streamSocket = nullptr;
           break;
         }
+        std::optional<HWND> clientMessageWindowHandle = browserProcessHandler
+            ->GetClientMessageWindowHandle();
+        if (clientMessageWindowHandle.has_value()) {
+          PostMessageW(clientMessageWindowHandle.value(), WM_USER, 0, 0);
+        }
     }
     SDL_Delay(1);  // tiny yield
   }
@@ -293,10 +306,12 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
     std::string type = jsonRequest["type"].get<std::string>();
     UUID id = jsonRequest["id"].get<UUID>();
 
-    if (type == "InitializeRequest") {
-      InitializeRequest request = jsonRequest.get<InitializeRequest>();
+    if (type == "InitializeClientRequest") {
+      InitializeClientRequest request = jsonRequest.get<InitializeClientRequest>();
       browserProcessHandler->OpenClientProcessHandle(request.clientProcessId);
-      InitializeResponse response;
+      browserProcessHandler->SetClientMessageWindowHandle(
+          reinterpret_cast<HWND>(request.clientMessageWindowHandle));
+      InitializeClientResponse response;
       response.id = request.id;
       json jsonResponse = response;
       browserProcessHandler->SendMessage(jsonResponse.dump());
