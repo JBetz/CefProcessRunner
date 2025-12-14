@@ -23,6 +23,10 @@ void BrowserHandler::SetBrowser(CefRefPtr<CefBrowser> browser_) {
   this->browser = browser_;
 }
 
+void BrowserHandler::SetPageRectangle(const CefRect& rect) {
+  this->pageRectangle = rect;
+}
+
 CefRefPtr<CefRenderHandler> BrowserHandler::GetRenderHandler() {
   return this;
 }

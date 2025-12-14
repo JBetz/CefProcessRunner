@@ -7,9 +7,10 @@
 #include <vector>
 
 #include "include/cef_client.h"
-#include "browser_process_handler.h"
 #include "thread_safe_queue.hpp"
 #include "rpc.hpp"
+
+class BrowserProcessHandler;
 
 class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler  {
  public:
@@ -17,7 +18,7 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler  {
 
   CefRefPtr<CefBrowser> GetBrowser();
   void SetBrowser(CefRefPtr<CefBrowser> browser);
-  void Eval(EvalJavaScriptRequest evalRequest);
+  void SetPageRectangle(const CefRect& rect);
 
   // CefClient:
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;

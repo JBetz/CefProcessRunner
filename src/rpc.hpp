@@ -323,6 +323,86 @@ inline void to_json(json& j, const EvalJavaScriptResponse& m) {
   }
 }
 
+struct CanGoBackRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, CanGoBackRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct CanGoBackResponse {
+  UUID id;
+  int browserId;
+  bool canGoBack;
+};
+
+inline void to_json(json& j, const CanGoBackResponse& m) {
+  j = json::object();
+  j["type"] = "CanGoBackResponse";
+  j["id"] = m.id;
+  j["browserId"] = m.browserId;
+  j["canGoBack"] = m.canGoBack;
+}
+
+struct CanGoForwardRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, CanGoForwardRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct CanGoForwardResponse {
+  UUID id;
+  int browserId;
+  bool canGoForward;
+};
+
+inline void to_json(json& j, const CanGoForwardResponse& m) {
+  j = json::object();
+  j["type"] = "CanGoForwardResponse";
+  j["id"] = m.id;
+  j["browserId"] = m.browserId;
+  j["canGoForward"] = m.canGoForward;
+}
+
+struct GoBackRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, GoBackRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct GoForwardRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, GoForwardRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct ResizeNotification {
+  UUID id;
+  int browserId;
+  CefRect newRectangle;
+};
+
+inline void from_json(const json& j, ResizeNotification& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+  j.at("newRectangle").get_to(m.newRectangle);
+}
+
 struct AcceleratedPaintEvent {
   UUID id;
   int browserId;

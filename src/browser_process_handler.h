@@ -7,6 +7,8 @@
 #include "rpc.hpp"
 #include "thread_safe_queue.hpp"
 
+class BrowserHandler;
+
 class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHandler {
  public:
   BrowserProcessHandler();
@@ -15,6 +17,7 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   // Accessors.
   NET_Server* GetSocketServer();
   CefRefPtr<CefBrowser> GetBrowser(int browserId);
+  CefRefPtr<BrowserHandler> GetBrowserHandler(int browserId);
   void OpenClientProcessHandle(int processId);
   void SetClientMessageWindowHandle(HWND messageWindowHandle);
   std::optional<HANDLE> GetClientProcessHandle();
@@ -42,7 +45,7 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   ThreadSafeQueue<std::string> outgoingMessageQueue;
   SDL_Mutex* responseMapMutex = nullptr;
   std::map<UUID, std::unique_ptr<ResponseEntry>> responseEntries;
-  std::map<int, CefRefPtr<CefBrowser>> browsers;
+  std::map<int, CefRefPtr<BrowserHandler>> browserHandlers;
 
   NET_Server* socketServer;
 

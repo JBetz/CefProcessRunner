@@ -32,7 +32,7 @@ BrowserProcessHandler::BrowserProcessHandler()
       outgoingMessageQueue(),
       responseMapMutex(SDL_CreateMutex()),
       socketServer(NULL),
-      browsers() {}
+      browserHandlers() {}
 
 BrowserProcessHandler::~BrowserProcessHandler() {
   SDL_DestroyMutex(responseMapMutex);
@@ -44,8 +44,16 @@ NET_Server* BrowserProcessHandler::GetSocketServer() {
 }
 
 CefRefPtr<CefBrowser> BrowserProcessHandler::GetBrowser(int browserId) {
-  auto it = browsers.find(browserId);
-  if (it != browsers.end()) {
+  auto it = browserHandlers.find(browserId);
+  if (it != browserHandlers.end()) {
+    return it->second->GetBrowser();
+  }
+  return nullptr;
+}
+
+CefRefPtr<BrowserHandler> BrowserProcessHandler::GetBrowserHandler(int browserId) {
+  auto it = browserHandlers.find(browserId);
+  if (it != browserHandlers.end()) {
     return it->second;
   }
   return nullptr;
@@ -124,22 +132,22 @@ void BrowserProcessHandler::CreateBrowserRpc(const CreateBrowserRequest& request
       CefRequestContext::CreateContext(CefRequestContextSettings(), nullptr);
   CefRefPtr<CefDictionaryValue> extraInfo = CefDictionaryValue::Create();
 
-  CefRefPtr<BrowserHandler> client = new BrowserHandler(this, request.rectangle);
+  CefRefPtr<BrowserHandler> handler = new BrowserHandler(this, request.rectangle);
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(
       windowInfo,
-      client,
+      handler,
       request.url,
       browserSettings,
       extraInfo, 
       requestContext);
 
-  client->SetBrowser(browser);
+  handler->SetBrowser(browser);
 
   int browserId = -1;
   if (browser) {
     browserId = browser->GetIdentifier();
-    browsers[browserId] = browser;
+    browserHandlers[browserId] = handler;
     SDL_Log("Created browser on UI thread; id=%d url=%s", browserId,
             request.url.c_str());
     CreateBrowserResponse response;
@@ -336,6 +344,73 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
             frame->SendProcessMessage(PID_RENDERER, message);
       continue;
     };
+
+    if (type == "CanGoBackRequest") {
+      CanGoBackRequest request = jsonRequest.get<CanGoBackRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      CanGoBackResponse response;
+      response.id = request.id;
+      response.canGoBack = false;
+      if (browser) {
+        response.canGoBack = browser->CanGoBack();
+      } else {
+        SDL_Log("CanGoBackRequest: Browser with id %d not found", request.browserId);
+      }
+      json jsonResponse = response;
+      browserProcessHandler->SendMessage(jsonResponse.dump());
+      continue;
+    }
+
+    if (type == "CanGoForwardRequest") {
+      CanGoForwardRequest request = jsonRequest.get<CanGoForwardRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      CanGoForwardResponse response;
+      response.id = request.id;
+      response.canGoForward = false;
+      if (browser) {
+        response.canGoForward = browser->CanGoForward();
+      } else {
+        SDL_Log("CanGoForwardRequest: Browser with id %d not found", request.browserId);
+      }
+      json jsonResponse = response;
+      browserProcessHandler->SendMessage(jsonResponse.dump());
+      continue;
+    }
+
+    if (type == "GoBackRequest") {
+      GoBackRequest request = jsonRequest.get<GoBackRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GoBack();
+      } else {
+        SDL_Log("GoBackRequest: Browser with id %d not found", request.browserId);
+      }
+      continue;
+    }
+
+    if (type == "GoForwardRequest") {
+      GoForwardRequest request = jsonRequest.get<GoForwardRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GoForward();
+      } else {
+        SDL_Log("GoForwardRequest: Browser with id %d not found", request.browserId);
+      }
+      continue;
+    }
+
+    if (type == "ResizeNotification") {
+      ResizeNotification request = jsonRequest.get<ResizeNotification>();
+      CefRefPtr<BrowserHandler> browserHandler = browserProcessHandler->GetBrowserHandler(request.browserId);
+      if (browserHandler) {
+        browserHandler->SetPageRectangle(request.newRectangle);
+        SDL_Log("Called WasResized");
+        browserHandler->GetBrowser()->GetHost()->WasResized();
+      } else {
+        SDL_Log("ResizeNotification: Browser with id %d not found", request.browserId);
+      }
+      continue;
+    }
 
     if (type == "MouseClickEvent") {
       MouseClickEvent request = jsonRequest.get<MouseClickEvent>();
