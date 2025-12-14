@@ -353,8 +353,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       response.canGoBack = false;
       if (browser) {
         response.canGoBack = browser->CanGoBack();
-      } else {
-        SDL_Log("CanGoBackRequest: Browser with id %d not found", request.browserId);
       }
       json jsonResponse = response;
       browserProcessHandler->SendMessage(jsonResponse.dump());
@@ -369,8 +367,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       response.canGoForward = false;
       if (browser) {
         response.canGoForward = browser->CanGoForward();
-      } else {
-        SDL_Log("CanGoForwardRequest: Browser with id %d not found", request.browserId);
       }
       json jsonResponse = response;
       browserProcessHandler->SendMessage(jsonResponse.dump());
@@ -382,8 +378,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GoBack();
-      } else {
-        SDL_Log("GoBackRequest: Browser with id %d not found", request.browserId);
       }
       continue;
     }
@@ -393,8 +387,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GoForward();
-      } else {
-        SDL_Log("GoForwardRequest: Browser with id %d not found", request.browserId);
       }
       continue;
     }
@@ -406,8 +398,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         browserHandler->SetPageRectangle(request.newRectangle);
         SDL_Log("Called WasResized");
         browserHandler->GetBrowser()->GetHost()->WasResized();
-      } else {
-        SDL_Log("ResizeNotification: Browser with id %d not found", request.browserId);
       }
       continue;
     }
@@ -416,13 +406,11 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       MouseClickEvent request = jsonRequest.get<MouseClickEvent>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
-            browser->GetHost()->SendMouseClickEvent(
+        browser->GetHost()->SendMouseClickEvent(
             request.mouseEvent,
             static_cast<CefBrowserHost::MouseButtonType>(request.button),
             request.mouseUp,
             request.clickCount);
-      } else {
-        SDL_Log("MouseClickEvent: Browser with id %d not found", request.browserId);
       }
       continue;
     }
@@ -434,8 +422,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         browser->GetHost()->SendMouseMoveEvent(
             request.mouseEvent,
             request.mouseLeave);
-      } else {
-        SDL_Log("MouseMoveEvent: Browser with id %d not found", request.browserId);
       }
       continue;
     }
@@ -445,10 +431,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GetHost()->SendMouseWheelEvent(request.mouseEvent, request.deltaX, request.deltaY);
-      } else {
-        SDL_Log("MouseWheelEvent: Browser with id %d not found",
-                request.browserId);
-      };
+      }
       continue;
     }
 
@@ -457,9 +440,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GetHost()->SendKeyEvent(request.keyEvent);
-      } else {
-        SDL_Log("KeyboardEvent: Browser with id %d not found",
-                request.browserId);
       }
       continue;
     }
