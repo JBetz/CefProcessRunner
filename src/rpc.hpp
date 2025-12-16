@@ -391,6 +391,48 @@ inline void from_json(const json& j, GoForwardRequest& m) {
   j.at("browserId").get_to(m.browserId);
 }
 
+struct ReloadRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, ReloadRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct FocusRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, FocusRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct DefocusRequest {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, DefocusRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct WasHiddenRequest {
+  UUID id;
+  int browserId;
+  bool hidden;
+};
+
+inline void from_json(const json& j, WasHiddenRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+  j.at("hidden").get_to(m.hidden);
+}
+
 struct LoadUrlRequest {
   UUID id;
   int browserId;

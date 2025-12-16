@@ -392,6 +392,42 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       continue;
     }
 
+    if (type == "ReloadRequest") {
+      ReloadRequest request = jsonRequest.get<ReloadRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->Reload();
+      }
+      continue;
+    }
+
+    if (type == "FocusRequest") {
+      FocusRequest request = jsonRequest.get<FocusRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetHost()->SetFocus(true);
+      }
+      continue;
+    }
+
+    if (type == "DefocusRequest") {
+      DefocusRequest request = jsonRequest.get<DefocusRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetHost()->SetFocus(false);
+      }
+      continue;
+    }
+
+    if (type == "WasHiddenRequest") {
+      WasHiddenRequest request = jsonRequest.get<WasHiddenRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetHost()->WasHidden(request.hidden);
+      }
+      continue;
+    }
+
     if (type == "LoadUrlRequest") {
       LoadUrlRequest request = jsonRequest.get<LoadUrlRequest>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
@@ -407,7 +443,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       CefRefPtr<BrowserHandler> browserHandler = browserProcessHandler->GetBrowserHandler(request.browserId);
       if (browserHandler) {
         browserHandler->SetPageRectangle(request.newRectangle);
-        SDL_Log("Called WasResized");
         browserHandler->GetBrowser()->GetHost()->WasResized();
       }
       continue;
