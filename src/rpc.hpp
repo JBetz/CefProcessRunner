@@ -391,6 +391,18 @@ inline void from_json(const json& j, GoForwardRequest& m) {
   j.at("browserId").get_to(m.browserId);
 }
 
+struct LoadUrlRequest {
+  UUID id;
+  int browserId;
+  std::string url;
+};
+
+inline void from_json(const json& j, LoadUrlRequest& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+  j.at("url").get_to(m.url);
+}
+
 struct ResizeNotification {
   UUID id;
   int browserId;

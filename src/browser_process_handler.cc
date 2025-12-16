@@ -10,6 +10,7 @@
 
 #include <include/base/cef_callback.h>
 #include <include/cef_task.h>
+#include <include/cef_parser.h>
 #include <include/base/cef_bind.h>
 #include <include/wrapper/cef_closure_task.h>
 #include <SDL3/sdl.h>
@@ -387,6 +388,16 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GoForward();
+      }
+      continue;
+    }
+
+    if (type == "LoadUrlRequest") {
+      LoadUrlRequest request = jsonRequest.get<LoadUrlRequest>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+        frame->LoadURL(request.url);
       }
       continue;
     }
