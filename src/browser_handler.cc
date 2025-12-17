@@ -35,10 +35,6 @@ CefRefPtr<CefDisplayHandler> BrowserHandler::GetDisplayHandler() {
   return this;
 }
 
-CefRefPtr<CefContextMenuHandler> BrowserHandler::GetContextMenuHandler() {
-  return this;
-}
-
 bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,
