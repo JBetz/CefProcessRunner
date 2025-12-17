@@ -321,10 +321,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       browserProcessHandler->OpenClientProcessHandle(request.clientProcessId);
       browserProcessHandler->SetClientMessageWindowHandle(
           reinterpret_cast<HWND>(request.clientMessageWindowHandle));
-      InitializeClientResponse response;
-      response.id = request.id;
-      json jsonResponse = response;
-      browserProcessHandler->SendMessage(jsonResponse.dump());
       continue;
     }
 

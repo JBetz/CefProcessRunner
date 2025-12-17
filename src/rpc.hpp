@@ -81,16 +81,6 @@ inline void from_json(const json& j, Client_Initialize& m) {
   j.at("clientMessageWindowHandle").get_to(m.clientMessageWindowHandle);
 }
 
-struct InitializeClientResponse {
-  UUID id;
-};
-
-inline void to_json(json& j, const InitializeClientResponse& m) {
-  j = json::object();
-  j["type"] = "InitializeClientResponse";
-  j["id"] = m.id;
-}
-
 struct Client_CreateBrowser {
   UUID id;
   std::string url;
