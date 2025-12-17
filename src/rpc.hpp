@@ -105,7 +105,7 @@ inline void from_json(const json& j, CreateBrowserRequest& m) {
   j.at("html").get_to(m.html);
 }
 
-struct EvalJavaScriptRequest {
+struct Browser_EvalJavaScript {
   UUID id;
   int browserId;
   std::string code;
@@ -113,7 +113,7 @@ struct EvalJavaScriptRequest {
   int startLine;
 };
 
-inline void from_json(const json& j, EvalJavaScriptRequest& m) {
+inline void from_json(const json& j, Browser_EvalJavaScript& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
   j.at("code").get_to(m.code);
@@ -323,12 +323,12 @@ inline void to_json(json& j, const EvalJavaScriptResponse& m) {
   }
 }
 
-struct CanGoBackRequest {
+struct Browser_CanGoBack {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, CanGoBackRequest& m) {
+inline void from_json(const json& j, Browser_CanGoBack& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
@@ -347,12 +347,12 @@ inline void to_json(json& j, const CanGoBackResponse& m) {
   j["canGoBack"] = m.canGoBack;
 }
 
-struct CanGoForwardRequest {
+struct Browser_CanGoForward {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, CanGoForwardRequest& m) {
+inline void from_json(const json& j, Browser_CanGoForward& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
@@ -371,87 +371,87 @@ inline void to_json(json& j, const CanGoForwardResponse& m) {
   j["canGoForward"] = m.canGoForward;
 }
 
-struct GoBackRequest {
+struct Browser_Back {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, GoBackRequest& m) {
+inline void from_json(const json& j, Browser_Back& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
 
-struct GoForwardRequest {
+struct Browser_Forward {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, GoForwardRequest& m) {
+inline void from_json(const json& j, Browser_Forward& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
 
-struct ReloadRequest {
+struct Browser_Reload {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, ReloadRequest& m) {
+inline void from_json(const json& j, Browser_Reload& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
 
-struct FocusRequest {
+struct Browser_Focus {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, FocusRequest& m) {
+inline void from_json(const json& j, Browser_Focus& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
 
-struct DefocusRequest {
+struct Browser_Defocus {
   UUID id;
   int browserId;
 };
 
-inline void from_json(const json& j, DefocusRequest& m) {
+inline void from_json(const json& j, Browser_Defocus& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
 }
 
-struct WasHiddenRequest {
+struct Browser_WasHidden {
   UUID id;
   int browserId;
   bool hidden;
 };
 
-inline void from_json(const json& j, WasHiddenRequest& m) {
+inline void from_json(const json& j, Browser_WasHidden& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
   j.at("hidden").get_to(m.hidden);
 }
 
-struct LoadUrlRequest {
+struct Browser_LoadUrl {
   UUID id;
   int browserId;
   std::string url;
 };
 
-inline void from_json(const json& j, LoadUrlRequest& m) {
+inline void from_json(const json& j, Browser_LoadUrl& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
   j.at("url").get_to(m.url);
 }
 
-struct ResizeNotification {
+struct Browser_NotifyResize {
   UUID id;
   int browserId;
   CefRect newRectangle;
 };
 
-inline void from_json(const json& j, ResizeNotification& m) {
+inline void from_json(const json& j, Browser_NotifyResize& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
   j.at("newRectangle").get_to(m.newRectangle);

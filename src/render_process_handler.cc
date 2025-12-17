@@ -356,7 +356,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
   if (name == "Eval") {
     SDL_Log("RenderProcessHandler received CefEvalRequest");
     const CefString& payload = message->GetArgumentList()->GetString(0);
-    EvalJavaScriptRequest evalRequest = json::parse(payload.ToString()).get<EvalJavaScriptRequest>();
+    Browser_EvalJavaScript evalRequest = json::parse(payload.ToString()).get<Browser_EvalJavaScript>();
     CefRefPtr<CefV8Value> retval;
     CefRefPtr<CefV8Exception> exception;
     bool success =
