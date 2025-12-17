@@ -119,7 +119,7 @@ void BrowserProcessHandler::OnContextInitialized() {
   }
 }
 
-void BrowserProcessHandler::CreateBrowserRpc(const CreateBrowserRequest& request) {
+void BrowserProcessHandler::CreateBrowserRpc(const Client_CreateBrowser& request) {
   CefWindowInfo windowInfo;
   windowInfo.SetAsWindowless(nullptr);  // no OS parent
   windowInfo.windowless_rendering_enabled = true;
@@ -316,8 +316,8 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
     std::string type = jsonRequest["type"].get<std::string>();
     UUID id = jsonRequest["id"].get<UUID>();
 
-    if (type == "InitializeClientRequest") {
-      InitializeClientRequest request = jsonRequest.get<InitializeClientRequest>();
+    if (type == "Client_Initialize") {
+      Client_Initialize request = jsonRequest.get<Client_Initialize>();
       browserProcessHandler->OpenClientProcessHandle(request.clientProcessId);
       browserProcessHandler->SetClientMessageWindowHandle(
           reinterpret_cast<HWND>(request.clientMessageWindowHandle));
@@ -328,8 +328,8 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       continue;
     }
 
-    if (type == "CreateBrowserRequest") {
-      CreateBrowserRequest request = jsonRequest.get<CreateBrowserRequest>();
+    if (type == "Client_CreateBrowser") {
+      Client_CreateBrowser request = jsonRequest.get<Client_CreateBrowser>();
       CefPostTask(TID_UI, base::BindOnce(&BrowserProcessHandler::CreateBrowserRpc, browserProcessHandler, request));
       continue;
     }
@@ -442,7 +442,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       Browser_NotifyResize request = jsonRequest.get<Browser_NotifyResize>();
       CefRefPtr<BrowserHandler> browserHandler = browserProcessHandler->GetBrowserHandler(request.browserId);
       if (browserHandler) {
-        browserHandler->SetPageRectangle(request.newRectangle);
+        browserHandler->SetPageRectangle(request.notifyResize);
         browserHandler->GetBrowser()->GetHost()->WasResized();
       }
       continue;

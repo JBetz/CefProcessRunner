@@ -69,13 +69,13 @@ inline void to_json(json& j, const CefCursorInfo& m) {
 }
 
 // Request messages
-struct InitializeClientRequest {
+struct Client_Initialize {
   UUID id;
   int clientProcessId;
   uintptr_t clientMessageWindowHandle;
 };
 
-inline void from_json(const json& j, InitializeClientRequest& m) {
+inline void from_json(const json& j, Client_Initialize& m) {
   j.at("id").get_to(m.id);
   j.at("clientProcessId").get_to(m.clientProcessId);
   j.at("clientMessageWindowHandle").get_to(m.clientMessageWindowHandle);
@@ -91,14 +91,14 @@ inline void to_json(json& j, const InitializeClientResponse& m) {
   j["id"] = m.id;
 }
 
-struct CreateBrowserRequest {
+struct Client_CreateBrowser {
   UUID id;
   std::string url;
   CefRect rectangle;
   std::optional<std::string> html;
 };
 
-inline void from_json(const json& j, CreateBrowserRequest& m) {
+inline void from_json(const json& j, Client_CreateBrowser& m) {
   j.at("id").get_to(m.id);
   j.at("url").get_to(m.url);
   j.at("rectangle").get_to(m.rectangle);
@@ -448,13 +448,13 @@ inline void from_json(const json& j, Browser_LoadUrl& m) {
 struct Browser_NotifyResize {
   UUID id;
   int browserId;
-  CefRect newRectangle;
+  CefRect notifyResize;
 };
 
 inline void from_json(const json& j, Browser_NotifyResize& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("newRectangle").get_to(m.newRectangle);
+  j.at("notifyResize").get_to(m.notifyResize);
 }
 
 struct AcceleratedPaintEvent {
