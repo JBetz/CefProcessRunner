@@ -423,7 +423,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       Browser_WasHidden request = jsonRequest.get<Browser_WasHidden>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
-        browser->GetHost()->WasHidden(request.hidden);
+        browser->GetHost()->WasHidden(request.wasHidden);
       }
       continue;
     }

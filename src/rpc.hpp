@@ -108,7 +108,7 @@ inline void from_json(const json& j, CreateBrowserRequest& m) {
 struct Browser_EvalJavaScript {
   UUID id;
   int browserId;
-  std::string code;
+  std::string evalJavaScript;
   std::string scriptUrl;
   int startLine;
 };
@@ -116,7 +116,7 @@ struct Browser_EvalJavaScript {
 inline void from_json(const json& j, Browser_EvalJavaScript& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("code").get_to(m.code);
+  j.at("evalJavaScript").get_to(m.evalJavaScript);
   j.at("scriptUrl").get_to(m.scriptUrl);
   j.at("startLine").get_to(m.startLine);
 }
@@ -424,13 +424,13 @@ inline void from_json(const json& j, Browser_Defocus& m) {
 struct Browser_WasHidden {
   UUID id;
   int browserId;
-  bool hidden;
+  bool wasHidden;
 };
 
 inline void from_json(const json& j, Browser_WasHidden& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("hidden").get_to(m.hidden);
+  j.at("wasHidden").get_to(m.wasHidden);
 }
 
 struct Browser_LoadUrl {
