@@ -475,6 +475,24 @@ inline void to_json(json& j, const AcceleratedPaintEvent& m) {
   j["format"] = m.format;
 }
 
+struct TextSelectionChangedEvent {
+  UUID id;
+  int browserId;
+  std::string selectedText;
+  int selectedRangeFrom;
+  int selectedRangeTo;
+};
+
+inline void to_json(json& j, const TextSelectionChangedEvent& m) {
+  j = json::object();
+  j["type"] = "TextSelectionChangedEvent";
+  j["id"] = m.id;
+  j["browserId"] = m.browserId;
+  j["selectedText"] = m.selectedText;
+  j["selectedRangeFrom"] = m.selectedRangeFrom;
+  j["selectedRangeTo"] = m.selectedRangeTo;
+}
+
 struct CursorChangeEvent {
   UUID id;
   int browserId;

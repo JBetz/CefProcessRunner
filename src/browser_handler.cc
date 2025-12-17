@@ -35,6 +35,10 @@ CefRefPtr<CefDisplayHandler> BrowserHandler::GetDisplayHandler() {
   return this;
 }
 
+CefRefPtr<CefContextMenuHandler> BrowserHandler::GetContextMenuHandler() {
+  return this;
+}
+
 bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,
@@ -118,6 +122,22 @@ void BrowserHandler::OnAcceleratedPaint(
   json j = message;
   browserProcessHandler->SendMessage(j.dump());
   browserProcessHandler->WaitForResponse<Acknowledgement>(id);
+}
+
+void BrowserHandler::OnTextSelectionChanged(
+    CefRefPtr<CefBrowser> browser_,
+    const CefString& selected_text,
+    const CefRange& selected_range) {
+  UUID id;
+  UuidCreate(&id);
+  TextSelectionChangedEvent message;
+  message.id = id;
+  message.browserId = browser_->GetIdentifier();
+  message.selectedText = selected_text.ToString();
+  message.selectedRangeFrom = selected_range.from;
+  message.selectedRangeTo = selected_range.to;
+  json j = message;
+  browserProcessHandler->SendMessage(j.dump());
 }
 
 

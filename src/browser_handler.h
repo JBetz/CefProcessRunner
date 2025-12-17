@@ -12,7 +12,7 @@
 
 class BrowserProcessHandler;
 
-class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler  {
+class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefContextMenuHandler  {
  public:
   BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle);
 
@@ -49,6 +49,9 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler  {
                       int& screenY) override;
   void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
   void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;
+  void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
+                              const CefString& selected_text,
+                              const CefRange& selected_range) override;
 
   // CefDisplayHandler:
   void OnAddressChange(CefRefPtr<CefBrowser> browser,
@@ -67,8 +70,8 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler  {
                           CefCursorHandle cursor,
                           cef_cursor_type_t type,
                       const CefCursorInfo& custom_cursor_info) override;
-
- private:
+  
+private:
   BrowserProcessHandler* browserProcessHandler;
   CefRefPtr<CefBrowser> browser;
   CefRect pageRectangle;
