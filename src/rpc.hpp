@@ -111,6 +111,76 @@ inline void from_json(const json& j, Browser_EvalJavaScript& m) {
   j.at("startLine").get_to(m.startLine);
 }
 
+struct Browser_Cut {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_Cut& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct Browser_Copy {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_Copy& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct Browser_Paste {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_Paste& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct Browser_Delete {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_Delete& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct Browser_Undo {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_Undo& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct Browser_Redo {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_Redo& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
+struct Browser_SelectAll {
+  UUID id;
+  int browserId;
+};
+
+inline void from_json(const json& j, Browser_SelectAll& m) {
+  j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+}
+
 inline void from_json(const json& j, MouseEvent& m) {
   j.at("x").get_to(m.x);
   j.at("y").get_to(m.y);
@@ -238,7 +308,7 @@ struct MouseOverEvent {
   int browserId;
   std::string tagName;
   std::optional<std::string> inputType;
-  std::string href;
+  std::optional<std::string> href;
   CefRect rectangle;
 };
 
@@ -251,9 +321,36 @@ inline void to_json(json& j, const MouseOverEvent& m) {
   if (m.inputType.has_value()) {
     j["inputType"] = m.inputType.value();
   }
+  if (m.href.has_value()) {
+    j["href"] = m.href.value();
+  }
   j["href"] = m.href;
   j["rectangle"] = m.rectangle;
 }
+
+struct FocusOutEvent {
+  UUID id;
+  int browserId;
+  std::optional<std::string> tagName;
+  std::optional<std::string> inputType;
+  std::optional<bool> isEditable;
+};
+
+inline void to_json(json& j, const FocusOutEvent& m) {
+  j = json::object();
+  j["type"] = "FocusOutEvent";
+  j["id"] = m.id;
+  j["browserId"] = m.browserId;
+  if (m.tagName.has_value()) {
+    j["tagName"] = m.tagName; 
+  }
+  if (m.inputType.has_value()) {
+    j["inputType"] = m.inputType.value();
+  }
+  if (m.isEditable.has_value()) {
+    j["isEditable"] = m.isEditable;
+  }
+ }
 
 // Response messages
 struct CreateBrowserResponse {
@@ -562,10 +659,34 @@ inline void to_json(json& j, const LoadingProgressChangeEvent& m) {
   j["progress"] = m.progress;
 }
 
-struct Acknowledgement {
+struct FocusedNodeChangedEvent {
   UUID id;
+  int browserId;
+  std::string tagName;
+  std::optional<std::string> inputType;
+  bool isEditable;
 };
 
-inline void from_json(const json& j, Acknowledgement& m) {
+inline void to_json(json& j, const FocusedNodeChangedEvent& m) {
+  j = json::object();
+  j["type"] = "FocusedNodeChangedEvent";
+  j["id"] = m.id;
+  j["browserId"] = m.browserId;
+  j["tagName"] = m.tagName;
+  if (m.inputType.has_value()) {
+    j["inputType"] = m.inputType;
+  }
+  j["isEditable"] = m.isEditable;
+}
+
+struct Browser_Acknowledge {
+  UUID id;
+  int browserId;
+  UUID acknowledge;
+};
+
+inline void from_json(const json& j, Browser_Acknowledge& m) {
   j.at("id").get_to(m.id);
+  j.at("browserId").get_to(m.browserId);
+  j.at("acknowledge").get_to(m.acknowledge);
 }

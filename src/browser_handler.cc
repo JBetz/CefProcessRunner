@@ -39,19 +39,8 @@ bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,
                                  CefRefPtr<CefProcessMessage> message) {
-  const CefString& name = message->GetName();
   CefRefPtr<CefListValue> args = message->GetArgumentList();
   if (!args || args->GetSize() == 0) {
-    return false;
-  }
-  const bool is_known_message = (name == "RenderProcessHandler.OnNavigate") ||
-                                (name == "RenderProcessHandler.OnMouseOver") ||
-                                (name == "RenderProcessHandler.OnMessage") ||
-                                (name == "RenderProcessHandler.OnFocus") ||
-                                (name == "RenderProcessHandler.OnFocusOut") ||
-                                (name == "RenderProcessHandler.OnEval");
-
-  if (!is_known_message) {
     return false;
   }
   if (args->GetType(0) == VTYPE_STRING) {
@@ -117,7 +106,7 @@ void BrowserHandler::OnAcceleratedPaint(
   }
   json j = message;
   browserProcessHandler->SendMessage(j.dump());
-  browserProcessHandler->WaitForResponse<Acknowledgement>(id);
+  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(id);
 }
 
 void BrowserHandler::OnTextSelectionChanged(

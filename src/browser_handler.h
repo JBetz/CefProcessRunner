@@ -12,7 +12,7 @@
 
 class BrowserProcessHandler;
 
-class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefContextMenuHandler  {
+class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefContextMenuHandler {
  public:
   BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle);
 

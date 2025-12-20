@@ -444,6 +444,69 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       continue;
     }
 
+    if (type == "Browser_Cut") {
+      Browser_Cut request = jsonRequest.get<Browser_Cut>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->Cut();
+      }
+      continue;
+    }
+
+    if (type == "Browser_Copy") {
+      Browser_Copy request = jsonRequest.get<Browser_Copy>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->Copy();
+      }
+      continue;
+    }
+
+    if (type == "Browser_Paste") {
+      Browser_Paste request = jsonRequest.get<Browser_Paste>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->Paste();
+      }
+      continue;
+    }
+
+    if (type == "Browser_Delete") {
+      Browser_Delete request = jsonRequest.get<Browser_Delete>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->Delete();
+      }
+      continue;
+    }
+
+    if (type == "Browser_Undo") {
+      Browser_Undo request = jsonRequest.get<Browser_Undo>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->Undo();
+      }
+      continue;
+    }
+
+    if (type == "Browser_Redo") {
+      Browser_Redo request = jsonRequest.get<Browser_Redo>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->Redo();
+      }
+      continue;
+    }
+
+    if (type == "Browser_SelectAll") {
+      Browser_SelectAll request = jsonRequest.get<Browser_SelectAll>();
+      CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
+      if (browser) {
+        browser->GetFocusedFrame()->SelectAll();
+      }
+      continue;
+    }
+
     if (type == "MouseClickEvent") {
       MouseClickEvent request = jsonRequest.get<MouseClickEvent>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
@@ -486,10 +549,11 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       continue;
     }
 
-    if (type == "Acknowledgement") {
+    if (type == "Browser_Acknowledge") {
+      Browser_Acknowledge request = jsonRequest.get<Browser_Acknowledge>();
       // Try to find a waiting entry
       SDL_LockMutex(browserProcessHandler->responseMapMutex);
-      auto it = browserProcessHandler->responseEntries.find(id);
+      auto it = browserProcessHandler->responseEntries.find(request.acknowledge);
       if (it != browserProcessHandler->responseEntries.end()) {
         ResponseEntry* e = it->second.get();
         SDL_LockMutex(e->mutex);
@@ -508,5 +572,5 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
   return 0;
 }
 
-template Acknowledgement
-    BrowserProcessHandler::WaitForResponse<Acknowledgement>(UUID);
+template Browser_Acknowledge
+    BrowserProcessHandler::WaitForResponse<Browser_Acknowledge>(UUID);
