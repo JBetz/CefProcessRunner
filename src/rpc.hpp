@@ -187,58 +187,58 @@ inline void from_json(const json& j, MouseEvent& m) {
   j.at("modifiers").get_to(m.modifiers);
 }
 
-struct MouseClickEvent {
+struct Browser_OnMouseClick {
   UUID id;
   int browserId;
-  MouseEvent mouseEvent;
+  MouseEvent onMouseClick;
   int button;
   bool mouseUp;
   int clickCount;
 };
 
-inline void from_json(const json& j, MouseClickEvent& m) {
+inline void from_json(const json& j, Browser_OnMouseClick& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("mouseEvent").get_to(m.mouseEvent);
+  j.at("onMouseClick").get_to(m.onMouseClick);
   j.at("button").get_to(m.button);
   j.at("mouseUp").get_to(m.mouseUp);
   j.at("clickCount").get_to(m.clickCount);
 }
 
-struct MouseMoveEvent {
+struct Browser_OnMouseMove {
   UUID id;
   int browserId;
-  MouseEvent mouseEvent;
+  MouseEvent onMouseMove;
   bool mouseLeave;
 };
 
-inline void from_json(const json& j, MouseMoveEvent& m) {
+inline void from_json(const json& j, Browser_OnMouseMove& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("mouseEvent").get_to(m.mouseEvent);
+  j.at("onMouseMove").get_to(m.onMouseMove);
   j.at("mouseLeave").get_to(m.mouseLeave);
 }
 
-struct MouseWheelEvent {
+struct Browser_OnMouseWheel {
   UUID id;
   int browserId;
-  MouseEvent mouseEvent;
+  MouseEvent onMouseWheel;
   int deltaX;
   int deltaY;
 };
 
-inline void from_json(const json& j, MouseWheelEvent& m) {
+inline void from_json(const json& j, Browser_OnMouseWheel& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("mouseEvent").get_to(m.mouseEvent);
+  j.at("onMouseWheel").get_to(m.onMouseWheel);
   j.at("deltaX").get_to(m.deltaX);
   j.at("deltaY").get_to(m.deltaY);
 }
 
-struct KeyboardEvent {
+struct Browser_OnKeyboardEvent {
   UUID id;
   int browserId;
-  CefKeyEvent keyEvent;
+  CefKeyEvent onKeyboardEvent;
 };
 
 inline void from_json(const json& j, CefKeyEvent& m) {
@@ -254,10 +254,10 @@ inline void from_json(const json& j, CefKeyEvent& m) {
   j.at("focus_on_editable_field").get_to(m.focus_on_editable_field);
 }
 
-inline void from_json(const json& j, KeyboardEvent& m) {
+inline void from_json(const json& j, Browser_OnKeyboardEvent& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("keyEvent").get_to(m.keyEvent);
+  j.at("onKeyboardEvent").get_to(m.onKeyboardEvent);
 }
 
 struct NavigateDestination {

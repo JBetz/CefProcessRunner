@@ -507,12 +507,12 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       continue;
     }
 
-    if (type == "MouseClickEvent") {
-      MouseClickEvent request = jsonRequest.get<MouseClickEvent>();
+    if (type == "Browser_OnMouseClick") {
+      Browser_OnMouseClick request = jsonRequest.get<Browser_OnMouseClick>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GetHost()->SendMouseClickEvent(
-            request.mouseEvent,
+            request.onMouseClick,
             static_cast<CefBrowserHost::MouseButtonType>(request.button),
             request.mouseUp,
             request.clickCount);
@@ -520,31 +520,31 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       continue;
     }
 
-    if (type == "MouseMoveEvent") {
-      MouseMoveEvent request = jsonRequest.get<MouseMoveEvent>();
+    if (type == "Browser_OnMouseMove") {
+      Browser_OnMouseMove request = jsonRequest.get<Browser_OnMouseMove>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
         browser->GetHost()->SendMouseMoveEvent(
-            request.mouseEvent,
+            request.onMouseMove,
             request.mouseLeave);
       }
       continue;
     }
 
-    if (type == "MouseWheelEvent") {
-      MouseWheelEvent request = jsonRequest.get<MouseWheelEvent>();
+    if (type == "Browser_OnMouseWheel") {
+      Browser_OnMouseWheel request = jsonRequest.get<Browser_OnMouseWheel>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
-        browser->GetHost()->SendMouseWheelEvent(request.mouseEvent, request.deltaX, request.deltaY);
+        browser->GetHost()->SendMouseWheelEvent(request.onMouseWheel, request.deltaX, request.deltaY);
       }
       continue;
     }
 
-    if (type == "KeyboardEvent") {
-      KeyboardEvent request = jsonRequest.get<KeyboardEvent>();
+    if (type == "Browser_OnKeyboardEvent") {
+      Browser_OnKeyboardEvent request = jsonRequest.get<Browser_OnKeyboardEvent>();
       CefRefPtr<CefBrowser> browser = browserProcessHandler->GetBrowser(request.browserId);
       if (browser) {
-        browser->GetHost()->SendKeyEvent(request.keyEvent);
+        browser->GetHost()->SendKeyEvent(request.onKeyboardEvent);
       }
       continue;
     }
