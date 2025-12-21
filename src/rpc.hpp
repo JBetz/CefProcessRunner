@@ -190,7 +190,7 @@ inline void from_json(const json& j, MouseEvent& m) {
 struct Browser_OnMouseClick {
   UUID id;
   int browserId;
-  MouseEvent onMouseClick;
+  MouseEvent event;
   int button;
   bool mouseUp;
   int clickCount;
@@ -199,7 +199,7 @@ struct Browser_OnMouseClick {
 inline void from_json(const json& j, Browser_OnMouseClick& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("onMouseClick").get_to(m.onMouseClick);
+  j.at("event").get_to(m.event);
   j.at("button").get_to(m.button);
   j.at("mouseUp").get_to(m.mouseUp);
   j.at("clickCount").get_to(m.clickCount);
@@ -208,21 +208,21 @@ inline void from_json(const json& j, Browser_OnMouseClick& m) {
 struct Browser_OnMouseMove {
   UUID id;
   int browserId;
-  MouseEvent onMouseMove;
+  MouseEvent event;
   bool mouseLeave;
 };
 
 inline void from_json(const json& j, Browser_OnMouseMove& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("onMouseMove").get_to(m.onMouseMove);
+  j.at("event").get_to(m.event);
   j.at("mouseLeave").get_to(m.mouseLeave);
 }
 
 struct Browser_OnMouseWheel {
   UUID id;
   int browserId;
-  MouseEvent onMouseWheel;
+  MouseEvent event;
   int deltaX;
   int deltaY;
 };
@@ -230,7 +230,7 @@ struct Browser_OnMouseWheel {
 inline void from_json(const json& j, Browser_OnMouseWheel& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("onMouseWheel").get_to(m.onMouseWheel);
+  j.at("event").get_to(m.event);
   j.at("deltaX").get_to(m.deltaX);
   j.at("deltaY").get_to(m.deltaY);
 }
@@ -238,7 +238,7 @@ inline void from_json(const json& j, Browser_OnMouseWheel& m) {
 struct Browser_OnKeyboardEvent {
   UUID id;
   int browserId;
-  CefKeyEvent onKeyboardEvent;
+  CefKeyEvent event;
 };
 
 inline void from_json(const json& j, CefKeyEvent& m) {
@@ -257,7 +257,7 @@ inline void from_json(const json& j, CefKeyEvent& m) {
 inline void from_json(const json& j, Browser_OnKeyboardEvent& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("onKeyboardEvent").get_to(m.onKeyboardEvent);
+  j.at("event").get_to(m.event);
 }
 
 struct NavigateDestination {
@@ -277,7 +277,7 @@ inline void to_json(json& j, const NavigateDestination& m) {
   j["url"] = m.url;
 }
 
-struct NavigateEvent {
+struct Browser_OnNavigate {
   UUID id;
   int browserId;
   NavigateDestination destination;
@@ -287,23 +287,19 @@ struct NavigateEvent {
   bool userInitiated;
 };
 
-inline void to_json(json& j, const NavigateEvent& m) {
+inline void to_json(json& j, const Browser_OnNavigate& m) {
   j = json::object();
-  j["type"] = "NavigateEvent";
+  j["type"] = "Browser_OnNavigate";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["destination"] = m.destination;
-  if (m.formData.has_value()) {
-    j["formData"] = m.formData.value();
-  } else {
-    j["formData"] = nullptr;
-  }
+  j["formData"] = m.formData;
   j["hashChange"] = m.hashChange;
   j["navigationType"] = m.navigationType;
   j["userInitiated"] = m.userInitiated;
 }
 
-struct MouseOverEvent {
+struct Browser_OnMouseOver {
   UUID id;
   int browserId;
   std::string tagName;
@@ -312,23 +308,18 @@ struct MouseOverEvent {
   CefRect rectangle;
 };
 
-inline void to_json(json& j, const MouseOverEvent& m) {
+inline void to_json(json& j, const Browser_OnMouseOver& m) {
   j = json::object();
-  j["type"] = "MouseOverEvent";
+  j["type"] = "Browser_OnMouseOver";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["tagName"] = m.tagName;
-  if (m.inputType.has_value()) {
-    j["inputType"] = m.inputType.value();
-  }
-  if (m.href.has_value()) {
-    j["href"] = m.href.value();
-  }
+  j["inputType"] = m.inputType;
   j["href"] = m.href;
   j["rectangle"] = m.rectangle;
 }
 
-struct FocusOutEvent {
+struct Browser_FocusOut {
   UUID id;
   int browserId;
   std::optional<std::string> tagName;
@@ -336,32 +327,25 @@ struct FocusOutEvent {
   std::optional<bool> isEditable;
 };
 
-inline void to_json(json& j, const FocusOutEvent& m) {
+inline void to_json(json& j, const Browser_FocusOut& m) {
   j = json::object();
-  j["type"] = "FocusOutEvent";
+  j["type"] = "Browser_FocusOut";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
-  if (m.tagName.has_value()) {
-    j["tagName"] = m.tagName; 
-  }
-  if (m.inputType.has_value()) {
-    j["inputType"] = m.inputType.value();
-  }
-  if (m.isEditable.has_value()) {
-    j["isEditable"] = m.isEditable;
-  }
+  j["tagName"] = m.tagName; 
+  j["inputType"] = m.inputType;
+  j["isEditable"] = m.isEditable;
  }
 
 // Response messages
-struct CreateBrowserResponse {
-  UUID id;
+struct Client_CreateBrowserResponse {
+  UUID requestId;
   int browserId;
 };
 
-inline void to_json(json& j, const CreateBrowserResponse& m) {
+inline void to_json(json& j, const Client_CreateBrowserResponse& m) {
   j = json::object();
-  j["type"] = "CreateBrowserResponse";
-  j["id"] = m.id;
+  j["requestId"] = m.requestId;
   j["browserId"] = m.browserId;
 }
 
@@ -388,19 +372,16 @@ inline void to_json(json& j, const EvalJavaScriptError& m) {
   j["startPosition"] = m.startPosition;
 }
 
-struct EvalJavaScriptResponse {
-  UUID id;
-  int browserId;
+struct Browser_EvalJavaScriptResponse {
+  UUID requestId;
   bool success;
   std::optional<EvalJavaScriptError> error;
   std::optional<std::string> result;
 };
 
-inline void to_json(json& j, const EvalJavaScriptResponse& m) {
+inline void to_json(json& j, const Browser_EvalJavaScriptResponse& m) {
   j = json::object();
-  j["type"] = "EvalJavaScriptResponse";
-  j["id"] = m.id;
-  j["browserId"] = m.browserId;
+  j["requestId"] = m.requestId;
   j["success"] = m.success;
   if (m.error.has_value()) {
     j["error"] = m.error.value();
@@ -420,17 +401,14 @@ inline void from_json(const json& j, Browser_CanGoBack& m) {
   j.at("browserId").get_to(m.browserId);
 }
 
-struct CanGoBackResponse {
-  UUID id;
-  int browserId;
+struct Browser_CanGoBackResponse {
+  UUID requestId;
   bool canGoBack;
 };
 
-inline void to_json(json& j, const CanGoBackResponse& m) {
+inline void to_json(json& j, const Browser_CanGoBackResponse& m) {
   j = json::object();
-  j["type"] = "CanGoBackResponse";
-  j["id"] = m.id;
-  j["browserId"] = m.browserId;
+  j["requestId"] = m.requestId;
   j["canGoBack"] = m.canGoBack;
 }
 
@@ -444,17 +422,14 @@ inline void from_json(const json& j, Browser_CanGoForward& m) {
   j.at("browserId").get_to(m.browserId);
 }
 
-struct CanGoForwardResponse {
-  UUID id;
-  int browserId;
+struct Browser_CanGoForwardResponse {
+  UUID requestId;
   bool canGoForward;
 };
 
-inline void to_json(json& j, const CanGoForwardResponse& m) {
+inline void to_json(json& j, const Browser_CanGoForwardResponse& m) {
   j = json::object();
-  j["type"] = "CanGoForwardResponse";
-  j["id"] = m.id;
-  j["browserId"] = m.browserId;
+  j["requestId"] = m.requestId;
   j["canGoForward"] = m.canGoForward;
 }
 
@@ -535,16 +510,16 @@ inline void from_json(const json& j, Browser_LoadUrl& m) {
 struct Browser_NotifyResize {
   UUID id;
   int browserId;
-  CefRect notifyResize;
+  CefRect rectangle;
 };
 
 inline void from_json(const json& j, Browser_NotifyResize& m) {
   j.at("id").get_to(m.id);
   j.at("browserId").get_to(m.browserId);
-  j.at("notifyResize").get_to(m.notifyResize);
+  j.at("rectangle").get_to(m.rectangle);
 }
 
-struct AcceleratedPaintEvent {
+struct Browser_OnAcceleratedPaint {
   UUID id;
   int browserId;
   int elementType;
@@ -552,9 +527,9 @@ struct AcceleratedPaintEvent {
   int format;
 };
 
-inline void to_json(json& j, const AcceleratedPaintEvent& m) {
+inline void to_json(json& j, const Browser_OnAcceleratedPaint& m) {
   j = json::object();
-  j["type"] = "AcceleratedPaintEvent";
+  j["type"] = "Browser_OnAcceleratedPaint";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["elementType"] = m.elementType;
@@ -562,7 +537,7 @@ inline void to_json(json& j, const AcceleratedPaintEvent& m) {
   j["format"] = m.format;
 }
 
-struct TextSelectionChangedEvent {
+struct Browser_OnTextSelectionChanged {
   UUID id;
   int browserId;
   std::string selectedText;
@@ -570,9 +545,9 @@ struct TextSelectionChangedEvent {
   int selectedRangeTo;
 };
 
-inline void to_json(json& j, const TextSelectionChangedEvent& m) {
+inline void to_json(json& j, const Browser_OnTextSelectionChanged& m) {
   j = json::object();
-  j["type"] = "TextSelectionChangedEvent";
+  j["type"] = "Browser_OnTextSelectionChanged";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["selectedText"] = m.selectedText;
@@ -580,7 +555,7 @@ inline void to_json(json& j, const TextSelectionChangedEvent& m) {
   j["selectedRangeTo"] = m.selectedRangeTo;
 }
 
-struct CursorChangeEvent {
+struct Browser_OnCursorChange {
   UUID id;
   int browserId;
   uintptr_t cursorHandle;
@@ -588,44 +563,44 @@ struct CursorChangeEvent {
   std::optional<CefCursorInfo> customCursorInfo;
 };
 
-inline void to_json(json& j, const CursorChangeEvent& m) {
+inline void to_json(json& j, const Browser_OnCursorChange& m) {
   j = json::object();
-  j["type"] = "CursorChangeEvent";
+  j["type"] = "Browser_OnCursorChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["cursorHandle"] = m.cursorHandle;
   j["cursorType"] = m.cursorType;
 }
 
-struct AddressChangeEvent {
+struct Browser_OnAddressChange {
   UUID id;
   int browserId;
   std::string url;
 };
 
-inline void to_json(json& j, const AddressChangeEvent& m) {
+inline void to_json(json& j, const Browser_OnAddressChange& m) {
   j = json::object();
-  j["type"] = "AddressChangeEvent";
+  j["type"] = "Browser_OnAddressChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["url"] = m.url;
 }
 
-struct TitleChangeEvent {
+struct Browser_OnTitleChange {
   UUID id;
   int browserId;
   std::string title;
 };
 
-inline void to_json(json& j, const TitleChangeEvent& m) {
+inline void to_json(json& j, const Browser_OnTitleChange& m) {
   j = json::object();
-  j["type"] = "TitleChangeEvent";
+  j["type"] = "Browser_OnTitleChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["title"] = m.title;
 }
 
-struct ConsoleMessageEvent {
+struct Browser_OnConsoleMessage {
   UUID id;
   int browserId;
   int level;
@@ -634,9 +609,9 @@ struct ConsoleMessageEvent {
   int line;
 };
 
-inline void to_json(json& j, const ConsoleMessageEvent& m) {
+inline void to_json(json& j, const Browser_OnConsoleMessage& m) {
   j = json::object();
-  j["type"] = "ConsoleMessageEvent";
+  j["type"] = "Browser_OnConsoleMessage";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["level"] = m.level;
@@ -645,21 +620,21 @@ inline void to_json(json& j, const ConsoleMessageEvent& m) {
   j["line"] = m.line;
 }
 
-struct LoadingProgressChangeEvent {
+struct Browser_OnLoadingProgressChange {
   UUID id;
   int browserId;
   double progress;
 };
 
-inline void to_json(json& j, const LoadingProgressChangeEvent& m) {
+inline void to_json(json& j, const Browser_OnLoadingProgressChange& m) {
   j = json::object();
-  j["type"] = "LoadingProgressChangeEvent";
+  j["type"] = "Browser_OnLoadingProgressChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["progress"] = m.progress;
 }
 
-struct FocusedNodeChangedEvent {
+struct Browser_OnFocusedNodeChanged {
   UUID id;
   int browserId;
   std::string tagName;
@@ -667,15 +642,13 @@ struct FocusedNodeChangedEvent {
   bool isEditable;
 };
 
-inline void to_json(json& j, const FocusedNodeChangedEvent& m) {
+inline void to_json(json& j, const Browser_OnFocusedNodeChanged& m) {
   j = json::object();
-  j["type"] = "FocusedNodeChangedEvent";
+  j["type"] = "Browser_OnFocusedNodeChanged";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["tagName"] = m.tagName;
-  if (m.inputType.has_value()) {
-    j["inputType"] = m.inputType;
-  }
+  j["inputType"] = m.inputType;
   j["isEditable"] = m.isEditable;
 }
 

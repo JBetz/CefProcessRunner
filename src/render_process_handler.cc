@@ -64,7 +64,7 @@ class MouseOverHandler : public CefV8Handler {
     UUID id;
     UuidCreate(&id);
 
-    MouseOverEvent mouseOverEvent;
+    Browser_OnMouseOver mouseOverEvent;
     mouseOverEvent.id = id;
     mouseOverEvent.browserId = frame->GetBrowser()->GetIdentifier();
     mouseOverEvent.tagName = target->GetValue("tagName")->GetStringValue().ToString();
@@ -164,7 +164,7 @@ class NavigateHandler : public CefV8Handler {
     UUID id;
     UuidCreate(&id);
 
-    NavigateEvent navigateEvent;
+    Browser_OnNavigate navigateEvent;
     navigateEvent.id = id;
     navigateEvent.browserId = frame->GetBrowser()->GetIdentifier();
     navigateEvent.destination.id =
@@ -217,7 +217,7 @@ class FocusOutHandler : public CefV8Handler {
     UUID id;
     UuidCreate(&id);
 
-    FocusOutEvent response;
+    Browser_FocusOut response;
     response.id = id;
     if (!relatedTarget->IsNull()) {
       response.tagName = relatedTarget->GetValue("tagName")->GetStringValue();
@@ -300,7 +300,7 @@ void RenderProcessHandler::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
         CefProcessMessage::Create(kOnFocusMessage);
     CefRefPtr<CefDictionaryValue> messageArguments =
         CefDictionaryValue::Create();
-    FocusedNodeChangedEvent response;
+    Browser_OnFocusedNodeChanged response;
     UUID id;
     UuidCreate(&id);
     response.id = id;
@@ -344,8 +344,8 @@ class PromiseThenHandler : public CefV8Handler {
         CefProcessMessage::Create(kOnEvalMessage);
     CefRefPtr<CefDictionaryValue> messageArguments =
         CefDictionaryValue::Create();
-    EvalJavaScriptResponse response;
-    response.id = messageId;
+    Browser_EvalJavaScriptResponse response;
+    response.requestId = messageId;
     response.result = result.ToString();
     json jsonResponse = response;
     responseMessage->GetArgumentList()->SetString(0, jsonResponse.dump());
@@ -388,9 +388,8 @@ bool RenderProcessHandler::OnProcessMessageReceived(
           CefV8Value::CreateFunction("onPromiseResolved", handler);
       thenFunction->ExecuteFunction(retval, {onResolvedFunc});
      } else {
-      EvalJavaScriptResponse response;
-      response.id = evalRequest.id;
-      response.browserId = frame->GetBrowser()->GetIdentifier();
+      Browser_EvalJavaScriptResponse response;
+      response.requestId = evalRequest.id;
       response.success = success;
       if (success) {
         CefRefPtr<CefV8Value> window = context->GetGlobal();
