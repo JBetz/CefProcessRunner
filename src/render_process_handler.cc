@@ -66,7 +66,7 @@ class MouseOverHandler : public CefV8Handler {
 
     Browser_OnMouseOver mouseOverEvent;
     mouseOverEvent.id = id;
-    mouseOverEvent.browserId = frame->GetBrowser()->GetIdentifier();
+    mouseOverEvent.instanceId = frame->GetBrowser()->GetIdentifier();
     mouseOverEvent.tagName = target->GetValue("tagName")->GetStringValue().ToString();
     if (mouseOverEvent.tagName == "INPUT") {
       mouseOverEvent.inputType = target->GetValue("type")->GetStringValue().ToString();
@@ -166,7 +166,7 @@ class NavigateHandler : public CefV8Handler {
 
     Browser_OnNavigate navigateEvent;
     navigateEvent.id = id;
-    navigateEvent.browserId = frame->GetBrowser()->GetIdentifier();
+    navigateEvent.instanceId = frame->GetBrowser()->GetIdentifier();
     navigateEvent.destination.id =
         event->GetValue("destination")->GetValue("id")->GetStringValue();
     navigateEvent.destination.url =
@@ -304,7 +304,7 @@ void RenderProcessHandler::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
     UUID id;
     UuidCreate(&id);
     response.id = id;
-    response.browserId = browser->GetIdentifier();
+    response.instanceId = browser->GetIdentifier();
     response.tagName = node->GetElementTagName();
     std::string inputType = node->GetElementAttribute("type");
     if (!inputType.empty()) {

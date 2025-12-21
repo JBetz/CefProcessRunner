@@ -44,16 +44,16 @@ NET_Server* BrowserProcessHandler::GetSocketServer() {
   return socketServer;
 }
 
-CefRefPtr<CefBrowser> BrowserProcessHandler::GetBrowser(int browserId) {
-  auto it = browserHandlers.find(browserId);
+CefRefPtr<CefBrowser> BrowserProcessHandler::GetBrowser(int instanceId) {
+  auto it = browserHandlers.find(instanceId);
   if (it != browserHandlers.end()) {
     return it->second->GetBrowser();
   }
   return nullptr;
 }
 
-CefRefPtr<BrowserHandler> BrowserProcessHandler::GetBrowserHandler(int browserId) {
-  auto it = browserHandlers.find(browserId);
+CefRefPtr<BrowserHandler> BrowserProcessHandler::GetBrowserHandler(int instanceId) {
+  auto it = browserHandlers.find(instanceId);
   if (it != browserHandlers.end()) {
     return it->second;
   }
@@ -340,7 +340,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         Browser_EvalJavaScript evalRequest =
             jsonRequest.get<Browser_EvalJavaScript>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(evalRequest.browserId);
+            browserProcessHandler->GetBrowser(evalRequest.instanceId);
         CefRefPtr<CefFrame> frame = browser->GetMainFrame();
         CefRefPtr<CefProcessMessage> message =
             CefProcessMessage::Create(kEvalMessage);
@@ -352,7 +352,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "CanGoBack") {
         Browser_CanGoBack request = jsonRequest.get<Browser_CanGoBack>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         Browser_CanGoBackResponse response;
         response.requestId = request.id;
         response.canGoBack = false;
@@ -367,7 +367,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "CanGoForward") {
         Browser_CanGoForward request = jsonRequest.get<Browser_CanGoForward>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         Browser_CanGoForwardResponse response;
         response.requestId = request.id;
         response.canGoForward = false;
@@ -382,7 +382,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Back") {
         Browser_Back request = jsonRequest.get<Browser_Back>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GoBack();
         }
@@ -392,7 +392,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Forward") {
         Browser_Forward request = jsonRequest.get<Browser_Forward>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GoForward();
         }
@@ -402,7 +402,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Reload") {
         Browser_Reload request = jsonRequest.get<Browser_Reload>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->Reload();
         }
@@ -412,7 +412,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Focus") {
         Browser_Focus request = jsonRequest.get<Browser_Focus>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SetFocus(true);
         }
@@ -422,7 +422,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Defocus") {
         Browser_Defocus request = jsonRequest.get<Browser_Defocus>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SetFocus(false);
         }
@@ -432,7 +432,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "WasHidden") {
         Browser_WasHidden request = jsonRequest.get<Browser_WasHidden>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->WasHidden(request.wasHidden);
         }
@@ -442,7 +442,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "LoadUrl") {
         Browser_LoadUrl request = jsonRequest.get<Browser_LoadUrl>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           CefRefPtr<CefFrame> frame = browser->GetMainFrame();
           frame->LoadURL(request.url);
@@ -453,7 +453,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "NotifyResize") {
         Browser_NotifyResize request = jsonRequest.get<Browser_NotifyResize>();
         CefRefPtr<BrowserHandler> browserHandler =
-            browserProcessHandler->GetBrowserHandler(request.browserId);
+            browserProcessHandler->GetBrowserHandler(request.instanceId);
         if (browserHandler) {
           browserHandler->SetPageRectangle(request.rectangle);
           browserHandler->GetBrowser()->GetHost()->WasResized();
@@ -464,7 +464,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Cut") {
         Browser_Cut request = jsonRequest.get<Browser_Cut>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->Cut();
         }
@@ -474,7 +474,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Copy") {
         Browser_Copy request = jsonRequest.get<Browser_Copy>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->Copy();
         }
@@ -484,7 +484,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Paste") {
         Browser_Paste request = jsonRequest.get<Browser_Paste>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->Paste();
         }
@@ -494,7 +494,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Delete") {
         Browser_Delete request = jsonRequest.get<Browser_Delete>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->Delete();
         }
@@ -504,7 +504,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Undo") {
         Browser_Undo request = jsonRequest.get<Browser_Undo>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->Undo();
         }
@@ -514,7 +514,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "Redo") {
         Browser_Redo request = jsonRequest.get<Browser_Redo>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->Redo();
         }
@@ -524,7 +524,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "SelectAll") {
         Browser_SelectAll request = jsonRequest.get<Browser_SelectAll>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetFocusedFrame()->SelectAll();
         }
@@ -534,7 +534,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "OnMouseClick") {
         Browser_OnMouseClick request = jsonRequest.get<Browser_OnMouseClick>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SendMouseClickEvent(
               request.event,
@@ -547,7 +547,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "OnMouseMove") {
         Browser_OnMouseMove request = jsonRequest.get<Browser_OnMouseMove>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SendMouseMoveEvent(request.event,
                                                  request.mouseLeave);
@@ -558,7 +558,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (methodName == "OnMouseWheel") {
         Browser_OnMouseWheel request = jsonRequest.get<Browser_OnMouseWheel>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SendMouseWheelEvent(request.event, request.deltaX,
                                                   request.deltaY);
@@ -570,7 +570,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         Browser_OnKeyboardEvent request =
             jsonRequest.get<Browser_OnKeyboardEvent>();
         CefRefPtr<CefBrowser> browser =
-            browserProcessHandler->GetBrowser(request.browserId);
+            browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SendKeyEvent(request.event);
         }

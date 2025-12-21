@@ -78,7 +78,7 @@ void BrowserHandler::OnAcceleratedPaint(
   UuidCreate(&id);
   Browser_OnAcceleratedPaint message;
   message.id = id;
-  message.browserId = browser_->GetIdentifier();
+  message.instanceId = browser_->GetIdentifier();
   message.elementType = type;
   message.format = info.format;
 
@@ -117,7 +117,7 @@ void BrowserHandler::OnTextSelectionChanged(
   UuidCreate(&id);
   Browser_OnTextSelectionChanged message;
   message.id = id;
-  message.browserId = browser_->GetIdentifier();
+  message.instanceId = browser_->GetIdentifier();
   message.selectedText = selected_text.ToString();
   message.selectedRangeFrom = selected_range.from;
   message.selectedRangeTo = selected_range.to;
@@ -155,7 +155,7 @@ void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser_,
   UuidCreate(&id);
   Browser_OnAddressChange message;
   message.id = id;
-  message.browserId = browser_->GetIdentifier();
+  message.instanceId = browser_->GetIdentifier();
   message.url = url.ToString();
   json j = message;
   browserProcessHandler->SendMessage(j.dump());
@@ -167,7 +167,7 @@ void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser_,
   UuidCreate(&id);
   Browser_OnTitleChange message;
   message.id = id;
-  message.browserId = browser_->GetIdentifier();
+  message.instanceId = browser_->GetIdentifier();
   message.title = title.ToString();
   json j = message;
   browserProcessHandler->SendMessage(j.dump());
@@ -182,7 +182,7 @@ bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
   UuidCreate(&id);
   Browser_OnConsoleMessage msg;
   msg.id = id;
-  msg.browserId = browser_->GetIdentifier();
+  msg.instanceId = browser_->GetIdentifier();
   msg.level = static_cast<int>(level);
   msg.message = message.ToString();
   msg.source = source.ToString();
@@ -198,7 +198,7 @@ void BrowserHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser_,
   UuidCreate(&id);
   Browser_OnLoadingProgressChange message;
   message.id = id;
-  message.browserId = browser_->GetIdentifier();
+  message.instanceId = browser_->GetIdentifier();
   message.progress = progress;
   json j = message;
   browserProcessHandler->SendMessage(j.dump());
@@ -212,7 +212,7 @@ bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
   UuidCreate(&id);
   Browser_OnCursorChange message;
   message.id = id;
-  message.browserId = browser_->GetIdentifier();
+  message.instanceId = browser_->GetIdentifier();
   message.cursorHandle = reinterpret_cast<uintptr_t>(cursor);
   message.cursorType = static_cast<int>(type);
   json j = message;
