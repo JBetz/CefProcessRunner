@@ -242,7 +242,7 @@ struct Browser_OnKeyboardEvent {
 };
 
 inline void from_json(const json& j, CefKeyEvent& m) {
-  j.at("method").get_to(m.type);
+  j.at("type").get_to(m.type);
   j.at("modifiers").get_to(m.modifiers);
   j.at("windows_key_code").get_to(m.windows_key_code);
   j.at("native_key_code").get_to(m.native_key_code);
