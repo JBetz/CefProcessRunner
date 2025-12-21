@@ -242,7 +242,7 @@ struct Browser_OnKeyboardEvent {
 };
 
 inline void from_json(const json& j, CefKeyEvent& m) {
-  j.at("type").get_to(m.type);
+  j.at("method").get_to(m.type);
   j.at("modifiers").get_to(m.modifiers);
   j.at("windows_key_code").get_to(m.windows_key_code);
   j.at("native_key_code").get_to(m.native_key_code);
@@ -289,7 +289,7 @@ struct Browser_OnNavigate {
 
 inline void to_json(json& j, const Browser_OnNavigate& m) {
   j = json::object();
-  j["type"] = "Browser_OnNavigate";
+  j["method"] = "Browser_OnNavigate";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["destination"] = m.destination;
@@ -310,7 +310,7 @@ struct Browser_OnMouseOver {
 
 inline void to_json(json& j, const Browser_OnMouseOver& m) {
   j = json::object();
-  j["type"] = "Browser_OnMouseOver";
+  j["method"] = "Browser_OnMouseOver";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["tagName"] = m.tagName;
@@ -329,7 +329,7 @@ struct Browser_FocusOut {
 
 inline void to_json(json& j, const Browser_FocusOut& m) {
   j = json::object();
-  j["type"] = "Browser_FocusOut";
+  j["method"] = "Browser_FocusOut";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["tagName"] = m.tagName; 
@@ -529,7 +529,7 @@ struct Browser_OnAcceleratedPaint {
 
 inline void to_json(json& j, const Browser_OnAcceleratedPaint& m) {
   j = json::object();
-  j["type"] = "Browser_OnAcceleratedPaint";
+  j["method"] = "Browser_OnAcceleratedPaint";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["elementType"] = m.elementType;
@@ -547,7 +547,7 @@ struct Browser_OnTextSelectionChanged {
 
 inline void to_json(json& j, const Browser_OnTextSelectionChanged& m) {
   j = json::object();
-  j["type"] = "Browser_OnTextSelectionChanged";
+  j["method"] = "Browser_OnTextSelectionChanged";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["selectedText"] = m.selectedText;
@@ -565,7 +565,7 @@ struct Browser_OnCursorChange {
 
 inline void to_json(json& j, const Browser_OnCursorChange& m) {
   j = json::object();
-  j["type"] = "Browser_OnCursorChange";
+  j["method"] = "Browser_OnCursorChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["cursorHandle"] = m.cursorHandle;
@@ -580,7 +580,7 @@ struct Browser_OnAddressChange {
 
 inline void to_json(json& j, const Browser_OnAddressChange& m) {
   j = json::object();
-  j["type"] = "Browser_OnAddressChange";
+  j["method"] = "Browser_OnAddressChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["url"] = m.url;
@@ -594,7 +594,7 @@ struct Browser_OnTitleChange {
 
 inline void to_json(json& j, const Browser_OnTitleChange& m) {
   j = json::object();
-  j["type"] = "Browser_OnTitleChange";
+  j["method"] = "Browser_OnTitleChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["title"] = m.title;
@@ -611,7 +611,7 @@ struct Browser_OnConsoleMessage {
 
 inline void to_json(json& j, const Browser_OnConsoleMessage& m) {
   j = json::object();
-  j["type"] = "Browser_OnConsoleMessage";
+  j["method"] = "Browser_OnConsoleMessage";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["level"] = m.level;
@@ -628,7 +628,7 @@ struct Browser_OnLoadingProgressChange {
 
 inline void to_json(json& j, const Browser_OnLoadingProgressChange& m) {
   j = json::object();
-  j["type"] = "Browser_OnLoadingProgressChange";
+  j["method"] = "Browser_OnLoadingProgressChange";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["progress"] = m.progress;
@@ -644,7 +644,7 @@ struct Browser_OnFocusedNodeChanged {
 
 inline void to_json(json& j, const Browser_OnFocusedNodeChanged& m) {
   j = json::object();
-  j["type"] = "Browser_OnFocusedNodeChanged";
+  j["method"] = "Browser_OnFocusedNodeChanged";
   j["id"] = m.id;
   j["browserId"] = m.browserId;
   j["tagName"] = m.tagName;
