@@ -434,7 +434,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         CefRefPtr<CefBrowser> browser =
             browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
-          browser->GetHost()->WasHidden(request.wasHidden);
+          browser->GetHost()->WasHidden(request.hidden);
         }
         continue;
       }
@@ -573,6 +573,16 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
             browserProcessHandler->GetBrowser(request.instanceId);
         if (browser) {
           browser->GetHost()->SendKeyEvent(request.event);
+        }
+        continue;
+      }
+
+      if (methodName == "Close") {
+        Browser_Close request = jsonRequest.get<Browser_Close>();
+        CefRefPtr<CefBrowser> browser =
+            browserProcessHandler->GetBrowser(request.instanceId);
+        if (browser) {
+            browser->GetHost()->CloseBrowser(request.forceClose);
         }
         continue;
       }

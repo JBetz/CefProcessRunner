@@ -489,13 +489,13 @@ inline void from_json(const json& j, Browser_Defocus& m) {
 struct Browser_WasHidden {
   UUID id;
   int instanceId;
-  bool wasHidden;
+  bool hidden;
 };
 
 inline void from_json(const json& j, Browser_WasHidden& m) {
   j.at("id").get_to(m.id);
   j.at("instanceId").get_to(m.instanceId);
-  j.at("wasHidden").get_to(m.wasHidden);
+  j.at("hidden").get_to(m.hidden);
 }
 
 struct Browser_LoadUrl {
@@ -661,6 +661,18 @@ inline void to_json(json& j, const Browser_OnFocusedNodeChanged& m) {
   j["tagName"] = m.tagName;
   j["inputType"] = m.inputType;
   j["isEditable"] = m.isEditable;
+}
+
+struct Browser_Close {
+  UUID id;
+  int instanceId;
+  bool forceClose;
+};
+
+inline void from_json(const json& j, Browser_Close& m) {
+  j.at("id").get_to(m.id);
+  j.at("instanceId").get_to(m.instanceId);
+  j.at("forceClose").get_to(m.forceClose);
 }
 
 struct Browser_Acknowledge {
