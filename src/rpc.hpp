@@ -498,21 +498,13 @@ inline void from_json(const json& j, Browser_Reload& m) {
 struct Browser_Focus {
   UUID id;
   int instanceId;
+  bool focus;
 };
 
 inline void from_json(const json& j, Browser_Focus& m) {
   j.at("id").get_to(m.id);
   j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Defocus {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Defocus& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
+  j.at("focus").get_to(m.focus);
 }
 
 struct Browser_WasHidden {

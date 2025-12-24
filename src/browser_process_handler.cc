@@ -454,13 +454,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
 
       if (methodName == "Focus") {
         Browser_Focus request = jsonRequest.get<Browser_Focus>();
-        browser->GetHost()->SetFocus(true);
-        continue;
-      }
-
-      if (methodName == "Defocus") {
-        Browser_Defocus request = jsonRequest.get<Browser_Defocus>();
-        browser->GetHost()->SetFocus(false);
+        browser->GetHost()->SetFocus(request.focus);
         continue;
       }
 
