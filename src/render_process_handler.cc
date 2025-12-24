@@ -61,11 +61,8 @@ class MouseOverHandler : public CefV8Handler {
         ->ExecuteFunction(event, stopPropagationArguments);
     CefRefPtr<CefV8Value> target = event->GetValue("target");
 
-    UUID id;
-    UuidCreate(&id);
-
     Browser_OnMouseOver mouseOverEvent;
-    mouseOverEvent.id = id;
+    mouseOverEvent.id = CreateUuid();
     mouseOverEvent.instanceId = frame->GetBrowser()->GetIdentifier();
     mouseOverEvent.tagName = target->GetValue("tagName")->GetStringValue().ToString();
     if (mouseOverEvent.tagName == "INPUT") {
@@ -161,11 +158,8 @@ class NavigateHandler : public CefV8Handler {
     CefRefPtr<CefFrame> frame = context->GetFrame();
     CefRefPtr<CefV8Value> event = arguments.front();
     
-    UUID id;
-    UuidCreate(&id);
-
     Browser_OnNavigate navigateEvent;
-    navigateEvent.id = id;
+    navigateEvent.id = CreateUuid();
     navigateEvent.instanceId = frame->GetBrowser()->GetIdentifier();
     navigateEvent.destination.id =
         event->GetValue("destination")->GetValue("id")->GetStringValue();
@@ -214,11 +208,8 @@ class FocusOutHandler : public CefV8Handler {
     CefRefPtr<CefDictionaryValue> messageArguments =
         CefDictionaryValue::Create();
 
-    UUID id;
-    UuidCreate(&id);
-
     Browser_FocusOut response;
-    response.id = id;
+    response.id = CreateUuid();
     if (!relatedTarget->IsNull()) {
       response.tagName = relatedTarget->GetValue("tagName")->GetStringValue();
       CefRefPtr<CefV8Value> attributes = relatedTarget->GetValue("attributes");
@@ -301,9 +292,7 @@ void RenderProcessHandler::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefDictionaryValue> messageArguments =
         CefDictionaryValue::Create();
     Browser_OnFocusedNodeChanged response;
-    UUID id;
-    UuidCreate(&id);
-    response.id = id;
+    response.id = CreateUuid();
     response.instanceId = browser->GetIdentifier();
     response.tagName = node->GetElementTagName();
     std::string inputType = node->GetElementAttribute("type");

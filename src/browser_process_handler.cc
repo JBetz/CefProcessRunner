@@ -66,7 +66,21 @@ void BrowserProcessHandler::RemoveBrowserHandler(int browserId) {
   if (it != browserHandlers.end()) {
     browserHandlers.erase(it);
   }
-};
+
+  // If we're in the middle of an explicit shutdown and there are no more
+  // browser handlers, finish the shutdown sequence.
+  if (isShuttingDown && browserHandlers.empty()) {
+    SDL_Log("All browser handlers removed during shutdown.");
+
+    // NOTE:
+    // - CefQuitMessageLoop() must be called on the same thread that called
+    //   CefRunMessageLoop()/CefInitialize (the "init" thread). In many simple
+    //   single-threaded setups the UI thread is also the init thread and this
+    //   is safe. If your init thread is different, replace this call with a
+    //   safe signal to the init thread (PostThreadMessage/condition/IPC).
+    CefQuitMessageLoop();
+  }
+}
 
 CefRefPtr<CefBrowserProcessHandler> BrowserProcessHandler::GetBrowserProcessHandler() {
   return this;
@@ -170,21 +184,30 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const Client_CreateBrowser& 
 }
 
 void BrowserProcessHandler::Client_ShutdownRpc(const Client_Shutdown& request) {
-  CefQuitMessageLoop();
-}
-
-void BrowserProcessHandler::Browser_CloseRpc(const Browser_Close& request) {
-  CefRefPtr<CefBrowser> browser = this->GetBrowser(request.instanceId);
-  if (browser) {
-    browser->GetHost()->CloseBrowser(request.forceClose);
+  isShuttingDown = true;
+  if (browserHandlers.empty()) {
+    SDL_Log("No browser handlers during shutdown.");
+    CefQuitMessageLoop();
+  } else {
+    SDL_Log("%d browser handlers during shutdown.", browserHandlers.size());
+    for (const auto& pair : browserHandlers) {
+      CefRefPtr<CefBrowser> browser = pair.second->GetBrowser();
+      browser->GetHost()->CloseBrowser(true);
+    }
   }
 }
 
-void BrowserProcessHandler::Browser_TryCloseRpc(const Browser_TryClose& request) {
-  CefRefPtr<CefBrowser> browser = this->GetBrowser(request.instanceId);
-  if (browser) {
-    browser->GetHost()->TryCloseBrowser();
-  }
+void BrowserProcessHandler::Browser_CloseRpc(const CefRefPtr<CefBrowser> browser, const Browser_Close& request) {
+  browser->GetHost()->CloseBrowser(request.forceClose);
+}
+
+void BrowserProcessHandler::Browser_TryCloseRpc(const CefRefPtr<CefBrowser> browser, const Browser_TryClose& request) {
+  bool canClose = browser->GetHost()->TryCloseBrowser();
+  Browser_TryCloseResponse response;
+  response.requestId = request.id;
+  response.canClose = canClose;
+  json jsonResponse = response;
+  outgoingMessageQueue.push(jsonResponse.dump());
 }
 
 void BrowserProcessHandler::SendMessage(std::string payload) {
@@ -541,14 +564,14 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         Browser_Close request = jsonRequest.get<Browser_Close>();
         CefPostTask(TID_UI,
                     base::BindOnce(&BrowserProcessHandler::Browser_CloseRpc,
-                                   browserProcessHandler, request));
+                                   browserProcessHandler, browser, request));
         continue;
       }
 
       if (methodName == "TryClose") {
         Browser_TryClose request = jsonRequest.get<Browser_TryClose>();
         CefPostTask(TID_UI, base::BindOnce(&BrowserProcessHandler::Browser_TryCloseRpc,
-                                           browserProcessHandler, request));
+                                           browserProcessHandler, browser, request));
         continue;
       }
 

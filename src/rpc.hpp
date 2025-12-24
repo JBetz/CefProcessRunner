@@ -19,17 +19,37 @@ inline void from_json(const json& j, HANDLE& m) {
 }
 
 // UUID
+inline UUID CreateUuid() {
+  UUID uuid;
+  RPC_STATUS resultCode = UuidCreate(&uuid);
+  if (resultCode == RPC_S_OK) {
+    return uuid;
+  } else {
+    throw std::runtime_error("UuidCreate() failed with error code: " +
+                             std::to_string(resultCode));
+  }
+}
+
 inline void to_json(json& j, const UUID& m) {
   RPC_CSTR str;
-  UuidToStringA(const_cast<UUID*>(&m), &str);
-  j = std::string(reinterpret_cast<char*>(str));
-  RpcStringFreeA(&str);
+  RPC_STATUS resultCode = UuidToStringA(const_cast<UUID*>(&m), &str);
+  if (resultCode == RPC_S_OK) {
+    j = std::string(reinterpret_cast<char*>(str));
+    RpcStringFreeA(&str);
+  } else {
+    throw std::runtime_error("UuidToStringA() failed with error code: " +
+                             std::to_string(resultCode));
+  }
 }
 
 inline void from_json(const json& j, UUID& m) {
   std::string str = j.get<std::string>();
   RPC_CSTR rpcStr = reinterpret_cast<RPC_CSTR>(const_cast<char*>(str.c_str()));
-  UuidFromStringA(rpcStr, &m);
+  RPC_STATUS resultCode = UuidFromStringA(rpcStr, &m);
+  if (resultCode != RPC_S_OK) {
+    throw std::runtime_error("UuidFromStringA() failed with error code: " +
+                             std::to_string(resultCode));
+  }
 }
 
 // CEF types
@@ -694,6 +714,17 @@ inline void from_json(const json& j, Browser_TryClose& m) {
   j.at("instanceId").get_to(m.instanceId);
 }
 
+struct Browser_TryCloseResponse {
+  UUID requestId;
+  bool canClose;
+};
+
+inline void to_json(json& j, const Browser_TryCloseResponse& m) {
+  j = json::object();
+  j["requestId"] = m.requestId;
+  j["canClose"] = m.canClose;
+}
+
 struct Browser_Acknowledge {
   UUID id;
   int instanceId;
@@ -704,4 +735,17 @@ inline void from_json(const json& j, Browser_Acknowledge& m) {
   j.at("id").get_to(m.id);
   j.at("instanceId").get_to(m.instanceId);
   j.at("acknowledge").get_to(m.acknowledge);
+}
+
+struct Browser_OnBeforeClose {
+  UUID id;
+  int instanceId;
+};
+
+inline void to_json(json& j, const Browser_OnBeforeClose& m) {
+  j = json::object();
+  j["class"] = "Browser";
+  j["method"] = "OnBeforeClose";
+  j["id"] = m.id;
+  j["instanceId"] = m.instanceId;
 }

@@ -31,8 +31,8 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   // Incoming RPC messages.
   void Client_CreateBrowserRpc(const Client_CreateBrowser& request);
   void Client_ShutdownRpc(const Client_Shutdown& request);
-  void Browser_CloseRpc(const Browser_Close& request);
-  void Browser_TryCloseRpc(const Browser_TryClose& request);
+  void Browser_CloseRpc(const CefRefPtr<CefBrowser> browser, const Browser_Close& request);
+  void Browser_TryCloseRpc(const CefRefPtr<CefBrowser> browser, const Browser_TryClose& request);
   
   // Outgoing RPC messages.
   void SendMessage(std::string payload);
@@ -50,6 +50,7 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   SDL_Mutex* responseMapMutex = nullptr;
   std::map<UUID, std::unique_ptr<ResponseEntry>> responseEntries;
   std::map<int, CefRefPtr<BrowserHandler>> browserHandlers;
+  bool isShuttingDown;
 
   NET_Server* socketServer;
 

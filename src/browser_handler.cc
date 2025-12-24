@@ -74,10 +74,8 @@ void BrowserHandler::OnAcceleratedPaint(
     PaintElementType type,
     const RectList& dirtyRects,
     const CefAcceleratedPaintInfo& info) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnAcceleratedPaint message;
-  message.id = id;
+  message.id = CreateUuid();
   message.instanceId = browser_->GetIdentifier();
   message.elementType = type;
   message.format = info.format;
@@ -106,17 +104,15 @@ void BrowserHandler::OnAcceleratedPaint(
   }
   json j = message;
   browserProcessHandler->SendMessage(j.dump());
-  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(id);
+  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(message.id);
 }
 
 void BrowserHandler::OnTextSelectionChanged(
     CefRefPtr<CefBrowser> browser_,
     const CefString& selected_text,
     const CefRange& selected_range) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnTextSelectionChanged message;
-  message.id = id;
+  message.id = CreateUuid();
   message.instanceId = browser_->GetIdentifier();
   message.selectedText = selected_text.ToString();
   message.selectedRangeFrom = selected_range.from;
@@ -151,10 +147,8 @@ void BrowserHandler::OnPopupSize(CefRefPtr<CefBrowser> browser_,
 void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser_,
                                     CefRefPtr<CefFrame> frame,
                                     const CefString& url) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnAddressChange message;
-  message.id = id;
+  message.id = CreateUuid();
   message.instanceId = browser_->GetIdentifier();
   message.url = url.ToString();
   json j = message;
@@ -163,10 +157,8 @@ void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser_,
 
 void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser_,
                                    const CefString& title) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnTitleChange message;
-  message.id = id;
+  message.id = CreateUuid();
   message.instanceId = browser_->GetIdentifier();
   message.title = title.ToString();
   json j = message;
@@ -178,10 +170,8 @@ bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
                                       const CefString& message,
                                       const CefString& source,
                                       int line) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnConsoleMessage msg;
-  msg.id = id;
+  msg.id = CreateUuid();
   msg.instanceId = browser_->GetIdentifier();
   msg.level = static_cast<int>(level);
   msg.message = message.ToString();
@@ -194,10 +184,8 @@ bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
 
 void BrowserHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser_,
                                               double progress) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnLoadingProgressChange message;
-  message.id = id;
+  message.id = CreateUuid();
   message.instanceId = browser_->GetIdentifier();
   message.progress = progress;
   json j = message;
@@ -208,10 +196,8 @@ bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
                                     CefCursorHandle cursor,
                                     cef_cursor_type_t type,
                                     const CefCursorInfo& custom_cursor_info) {
-  UUID id;
-  UuidCreate(&id);
   Browser_OnCursorChange message;
-  message.id = id;
+  message.id = CreateUuid();
   message.instanceId = browser_->GetIdentifier();
   message.cursorHandle = reinterpret_cast<uintptr_t>(cursor);
   message.cursorType = static_cast<int>(type);
@@ -221,11 +207,15 @@ bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
 }
 
 bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser_) {
-  SDL_Log("DoClose called for browser id %d", browser_->GetIdentifier());
   return false;
 }
 
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
-  SDL_Log("OnBeforeClose called for browser id %d", browser_->GetIdentifier());
   browserProcessHandler->RemoveBrowserHandler(browser_->GetIdentifier());
+  Browser_OnBeforeClose message;
+  message.id = CreateUuid();
+  message.instanceId = browser_->GetIdentifier();
+  json j = message;
+  browserProcessHandler->SendMessage(j.dump());
+  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(message.id);
 }
