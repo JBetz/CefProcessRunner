@@ -95,6 +95,14 @@ inline void from_json(const json& j, Client_CreateBrowser& m) {
   j.at("html").get_to(m.html);
 }
 
+struct Client_Shutdown {
+  UUID id;
+};
+
+inline void from_json(const json& j, Client_Shutdown& m) {
+  j.at("id").get_to(m.id);
+}
+
 struct Browser_EvalJavaScript {
   UUID id;
   int instanceId;

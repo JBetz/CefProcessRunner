@@ -29,6 +29,7 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   
   // Incoming RPC messages.
   void CreateBrowserRpc(const Client_CreateBrowser& request);
+  void ShutdownRpc(const Client_Shutdown& request);
   
   // Outgoing RPC messages.
   void SendMessage(std::string payload);

@@ -161,6 +161,10 @@ void BrowserProcessHandler::CreateBrowserRpc(const Client_CreateBrowser& request
   }
 }
 
+void BrowserProcessHandler::ShutdownRpc(const Client_Shutdown& request) {
+  CefQuitMessageLoop();
+}
+
 void BrowserProcessHandler::SendMessage(std::string payload) {
   outgoingMessageQueue.push(payload);
 }
@@ -330,6 +334,14 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
         Client_CreateBrowser request = jsonRequest.get<Client_CreateBrowser>();
         CefPostTask(TID_UI,
                     base::BindOnce(&BrowserProcessHandler::CreateBrowserRpc,
+                                   browserProcessHandler, request));
+        continue;
+      }
+
+      if (methodName == "Shutdown") {
+        Client_Shutdown request = jsonRequest.get<Client_Shutdown>();
+        CefPostTask(TID_UI,
+                    base::BindOnce(&BrowserProcessHandler::ShutdownRpc,
                                    browserProcessHandler, request));
         continue;
       }
