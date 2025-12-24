@@ -18,6 +18,7 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   NET_Server* GetSocketServer();
   CefRefPtr<CefBrowser> GetBrowser(int browserId);
   CefRefPtr<BrowserHandler> GetBrowserHandler(int browserId);
+  void RemoveBrowserHandler(int browserId);
   void OpenClientProcessHandle(int processId);
   void SetClientMessageWindowHandle(HWND messageWindowHandle);
   std::optional<HANDLE> GetClientProcessHandle();
@@ -28,8 +29,10 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   void OnContextInitialized() override;
   
   // Incoming RPC messages.
-  void CreateBrowserRpc(const Client_CreateBrowser& request);
-  void ShutdownRpc(const Client_Shutdown& request);
+  void Client_CreateBrowserRpc(const Client_CreateBrowser& request);
+  void Client_ShutdownRpc(const Client_Shutdown& request);
+  void Browser_CloseRpc(const Browser_Close& request);
+  void Browser_TryCloseRpc(const Browser_TryClose& request);
   
   // Outgoing RPC messages.
   void SendMessage(std::string payload);
