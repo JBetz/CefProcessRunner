@@ -29,10 +29,10 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   void OnContextInitialized() override;
   
   // Incoming RPC messages.
-  void Client_CreateBrowserRpc(const Client_CreateBrowser& request);
-  void Client_ShutdownRpc(const Client_Shutdown& request);
-  void Browser_CloseRpc(const CefRefPtr<CefBrowser> browser, const Browser_Close& request);
-  void Browser_TryCloseRpc(const CefRefPtr<CefBrowser> browser, const Browser_TryClose& request);
+  void Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle);
+  void Client_ShutdownRpc();
+  void Browser_CloseRpc(const CefRefPtr<CefBrowser> browser, bool forceClose);
+  void Browser_TryCloseRpc(const CefRefPtr<CefBrowser> browser, const UUID& requestId);
   
   // Outgoing RPC messages.
   void SendMessage(std::string payload);

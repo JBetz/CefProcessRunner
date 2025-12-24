@@ -109,43 +109,44 @@ inline void from_json(const json& j, CefKeyEvent& m) {
 }
 
 // Request messages
-struct Client_Initialize {
+struct RpcHeader {
   UUID id;
+  std::string className;
+  std::string methodName;
+  int instanceId;
+};
+
+inline void from_json(const json& j, RpcHeader& m) {
+  j.at("id").get_to(m.id);
+  j.at("class").get_to(m.className);
+  j.at("method").get_to(m.methodName);
+  j.at("instanceId").get_to(m.instanceId);
+}
+
+struct Client_Initialize {
   int clientProcessId;
   uintptr_t clientMessageWindowHandle;
 };
 
 inline void from_json(const json& j, Client_Initialize& m) {
-  j.at("id").get_to(m.id);
   j.at("clientProcessId").get_to(m.clientProcessId);
   j.at("clientMessageWindowHandle").get_to(m.clientMessageWindowHandle);
 }
 
 struct Client_CreateBrowser {
-  UUID id;
   std::string url;
   CefRect rectangle;
   std::optional<std::string> html;
 };
 
 inline void from_json(const json& j, Client_CreateBrowser& m) {
-  j.at("id").get_to(m.id);
   j.at("url").get_to(m.url);
   j.at("rectangle").get_to(m.rectangle);
   j.at("html").get_to(m.html);
 }
 
-struct Client_Shutdown {
-  UUID id;
-};
-
-inline void from_json(const json& j, Client_Shutdown& m) {
-  j.at("id").get_to(m.id);
-}
-
 struct Browser_EvalJavaScript {
   UUID id;
-  int instanceId;
   std::string evalJavaScript;
   std::string scriptUrl;
   int startLine;
@@ -153,85 +154,12 @@ struct Browser_EvalJavaScript {
 
 inline void from_json(const json& j, Browser_EvalJavaScript& m) {
   j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("evalJavaScript").get_to(m.evalJavaScript);
   j.at("scriptUrl").get_to(m.scriptUrl);
   j.at("startLine").get_to(m.startLine);
 }
 
-struct Browser_Cut {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Cut& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Copy {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Copy& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Paste {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Paste& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Delete {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Delete& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Undo {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Undo& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Redo {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Redo& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_SelectAll {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_SelectAll& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
 struct Browser_OnMouseClick {
-  UUID id;
-  int instanceId;
   CefMouseEvent event;
   int button;
   bool mouseUp;
@@ -239,8 +167,6 @@ struct Browser_OnMouseClick {
 };
 
 inline void from_json(const json& j, Browser_OnMouseClick& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("event").get_to(m.event);
   j.at("button").get_to(m.button);
   j.at("mouseUp").get_to(m.mouseUp);
@@ -248,44 +174,32 @@ inline void from_json(const json& j, Browser_OnMouseClick& m) {
 }
 
 struct Browser_OnMouseMove {
-  UUID id;
-  int instanceId;
   CefMouseEvent event;
   bool mouseLeave;
 };
 
 inline void from_json(const json& j, Browser_OnMouseMove& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("event").get_to(m.event);
   j.at("mouseLeave").get_to(m.mouseLeave);
 }
 
 struct Browser_OnMouseWheel {
-  UUID id;
-  int instanceId;
   CefMouseEvent event;
   int deltaX;
   int deltaY;
 };
 
 inline void from_json(const json& j, Browser_OnMouseWheel& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("event").get_to(m.event);
   j.at("deltaX").get_to(m.deltaX);
   j.at("deltaY").get_to(m.deltaY);
 }
 
 struct Browser_OnKeyboardEvent {
-  UUID id;
-  int instanceId;
   CefKeyEvent event;
 };
 
 inline void from_json(const json& j, Browser_OnKeyboardEvent& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("event").get_to(m.event);
 }
 
@@ -444,16 +358,6 @@ inline void to_json(json& j, const Browser_CanGoBackResponse& m) {
   j["canGoBack"] = m.canGoBack;
 }
 
-struct Browser_CanGoForward {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_CanGoForward& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
 struct Browser_CanGoForwardResponse {
   UUID requestId;
   bool canGoForward;
@@ -465,81 +369,35 @@ inline void to_json(json& j, const Browser_CanGoForwardResponse& m) {
   j["canGoForward"] = m.canGoForward;
 }
 
-struct Browser_Back {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Back& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Forward {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Forward& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
-struct Browser_Reload {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_Reload& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
-}
-
 struct Browser_Focus {
-  UUID id;
-  int instanceId;
   bool focus;
 };
 
 inline void from_json(const json& j, Browser_Focus& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("focus").get_to(m.focus);
 }
 
 struct Browser_WasHidden {
-  UUID id;
-  int instanceId;
   bool hidden;
 };
 
 inline void from_json(const json& j, Browser_WasHidden& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("hidden").get_to(m.hidden);
 }
 
 struct Browser_LoadUrl {
-  UUID id;
-  int instanceId;
   std::string url;
 };
 
 inline void from_json(const json& j, Browser_LoadUrl& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("url").get_to(m.url);
 }
 
 struct Browser_NotifyResize {
-  UUID id;
-  int instanceId;
   CefRect rectangle;
 };
 
 inline void from_json(const json& j, Browser_NotifyResize& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("rectangle").get_to(m.rectangle);
 }
 
@@ -685,25 +543,11 @@ inline void to_json(json& j, const Browser_OnFocusedNodeChanged& m) {
 }
 
 struct Browser_Close {
-  UUID id;
-  int instanceId;
   bool forceClose;
 };
 
 inline void from_json(const json& j, Browser_Close& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("forceClose").get_to(m.forceClose);
-}
-
-struct Browser_TryClose {
-  UUID id;
-  int instanceId;
-};
-
-inline void from_json(const json& j, Browser_TryClose& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
 }
 
 struct Browser_TryCloseResponse {
@@ -718,14 +562,10 @@ inline void to_json(json& j, const Browser_TryCloseResponse& m) {
 }
 
 struct Browser_Acknowledge {
-  UUID id;
-  int instanceId;
   UUID acknowledge;
 };
 
 inline void from_json(const json& j, Browser_Acknowledge& m) {
-  j.at("id").get_to(m.id);
-  j.at("instanceId").get_to(m.instanceId);
   j.at("acknowledge").get_to(m.acknowledge);
 }
 
