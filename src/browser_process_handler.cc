@@ -411,7 +411,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (rpc.methodName == "CanGoBack") {
         Browser_CanGoBackResponse response;
         response.requestId = rpc.id;
-        response.canGoBack = false;
         response.canGoBack = browser->CanGoBack();
         json jsonResponse = response;
         browserProcessHandler->SendMessage(jsonResponse.dump());
@@ -421,7 +420,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       if (rpc.methodName == "CanGoForward") {
         Browser_CanGoForwardResponse response;
         response.requestId = rpc.id;
-        response.canGoForward = false;
         response.canGoForward = browser->CanGoForward();
         json jsonResponse = response;
         browserProcessHandler->SendMessage(jsonResponse.dump());
