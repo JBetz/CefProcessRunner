@@ -382,9 +382,10 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
     }
 
     if (rpc.className == "Browser") {
-      CefRefPtr<CefBrowser> browser =
-          browserProcessHandler->GetBrowser(rpc.instanceId);
-      if (!browser) {
+      CefRefPtr<BrowserHandler> browserHandler = 
+          browserProcessHandler->GetBrowserHandler(rpc.instanceId);
+      CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
+      if (!browserHandler || !browser) {
         SDL_Log("RpcWorkerThread: Browser with id=%d not found", rpc.instanceId);
         continue;
       }
@@ -454,12 +455,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
 
       if (rpc.methodName == "NotifyResize") {
         Browser_NotifyResize request = jsonRequest.get<Browser_NotifyResize>();
-        CefRefPtr<BrowserHandler> browserHandler =
-            browserProcessHandler->GetBrowserHandler(rpc.instanceId);
-        if (browserHandler) {
-          browserHandler->SetPageRectangle(request.rectangle);
-          browserHandler->GetBrowser()->GetHost()->WasResized();
-        }
+        browserHandler->SetPageRectangle(request.rectangle);
         continue;
       }
 
