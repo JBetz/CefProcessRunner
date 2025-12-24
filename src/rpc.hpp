@@ -68,6 +68,26 @@ inline void to_json(json& j, const CefCursorInfo& m) {
   j["size"] = m.size;
 }
 
+inline void from_json(const json& j, CefMouseEvent& m) {
+  j.at("x").get_to(m.x);
+  j.at("y").get_to(m.y);
+  j.at("modifiers").get_to(m.modifiers);
+}
+
+inline void from_json(const json& j, CefKeyEvent& m) {
+  j.at("type").get_to(m.type);
+  j.at("modifiers").get_to(m.modifiers);
+  j.at("windows_key_code").get_to(m.windows_key_code);
+  j.at("native_key_code").get_to(m.native_key_code);
+  j.at("is_system_key").get_to(m.is_system_key);
+  std::string character = j.at("character");
+  m.character = character.empty() ? 0 : character[0];
+  std::string unmodified_character = j.at("unmodified_character");
+  m.unmodified_character =
+      unmodified_character.empty() ? 0 : unmodified_character[0];
+  j.at("focus_on_editable_field").get_to(m.focus_on_editable_field);
+}
+
 // Request messages
 struct Client_Initialize {
   UUID id;
@@ -189,16 +209,10 @@ inline void from_json(const json& j, Browser_SelectAll& m) {
   j.at("instanceId").get_to(m.instanceId);
 }
 
-inline void from_json(const json& j, MouseEvent& m) {
-  j.at("x").get_to(m.x);
-  j.at("y").get_to(m.y);
-  j.at("modifiers").get_to(m.modifiers);
-}
-
 struct Browser_OnMouseClick {
   UUID id;
   int instanceId;
-  MouseEvent event;
+  CefMouseEvent event;
   int button;
   bool mouseUp;
   int clickCount;
@@ -216,7 +230,7 @@ inline void from_json(const json& j, Browser_OnMouseClick& m) {
 struct Browser_OnMouseMove {
   UUID id;
   int instanceId;
-  MouseEvent event;
+  CefMouseEvent event;
   bool mouseLeave;
 };
 
@@ -230,7 +244,7 @@ inline void from_json(const json& j, Browser_OnMouseMove& m) {
 struct Browser_OnMouseWheel {
   UUID id;
   int instanceId;
-  MouseEvent event;
+  CefMouseEvent event;
   int deltaX;
   int deltaY;
 };
@@ -248,19 +262,6 @@ struct Browser_OnKeyboardEvent {
   int instanceId;
   CefKeyEvent event;
 };
-
-inline void from_json(const json& j, CefKeyEvent& m) {
-  j.at("type").get_to(m.type);
-  j.at("modifiers").get_to(m.modifiers);
-  j.at("windows_key_code").get_to(m.windows_key_code);
-  j.at("native_key_code").get_to(m.native_key_code);
-  j.at("is_system_key").get_to(m.is_system_key);
-  std::string character = j.at("character");
-  m.character = character.empty() ? 0 : character[0];
-  std::string unmodified_character = j.at("unmodified_character");
-  m.unmodified_character = unmodified_character.empty() ? 0 : unmodified_character[0];
-  j.at("focus_on_editable_field").get_to(m.focus_on_editable_field);
-}
 
 inline void from_json(const json& j, Browser_OnKeyboardEvent& m) {
   j.at("id").get_to(m.id);
