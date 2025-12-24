@@ -35,6 +35,10 @@ CefRefPtr<CefDisplayHandler> BrowserHandler::GetDisplayHandler() {
   return this;
 }
 
+CefRefPtr<CefLifeSpanHandler> BrowserHandler::GetLifeSpanHandler() {
+  return this;
+}
+
 bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,

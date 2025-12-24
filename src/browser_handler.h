@@ -23,6 +23,7 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
   // CefClient:
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
+  CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
