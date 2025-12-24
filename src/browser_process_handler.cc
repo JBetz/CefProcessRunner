@@ -70,15 +70,7 @@ void BrowserProcessHandler::RemoveBrowserHandler(int browserId) {
   // If we're in the middle of an explicit shutdown and there are no more
   // browser handlers, finish the shutdown sequence.
   if (isShuttingDown && browserHandlers.empty()) {
-    SDL_Log("All browser handlers removed during shutdown.");
-
-    // NOTE:
-    // - CefQuitMessageLoop() must be called on the same thread that called
-    //   CefRunMessageLoop()/CefInitialize (the "init" thread). In many simple
-    //   single-threaded setups the UI thread is also the init thread and this
-    //   is safe. If your init thread is different, replace this call with a
-    //   safe signal to the init thread (PostThreadMessage/condition/IPC).
-    CefQuitMessageLoop();
+    CefPostTask(TID_UI, base::BindOnce([]() { CefQuitMessageLoop(); }));
   }
 }
 
