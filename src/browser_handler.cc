@@ -219,3 +219,13 @@ bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
   browserProcessHandler->SendMessage(j.dump());
   return true;
 }
+
+bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser_) {
+  SDL_Log("DoClose called for browser id %d", browser_->GetIdentifier());
+  return false;
+}
+
+void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
+  SDL_Log("OnBeforeClose called for browser id %d", browser_->GetIdentifier());
+  browserProcessHandler->RemoveBrowserHandler(browser_->GetIdentifier());
+}

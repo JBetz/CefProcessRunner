@@ -684,6 +684,16 @@ inline void from_json(const json& j, Browser_Close& m) {
   j.at("forceClose").get_to(m.forceClose);
 }
 
+struct Browser_TryClose {
+  UUID id;
+  int instanceId;
+};
+
+inline void from_json(const json& j, Browser_TryClose& m) {
+  j.at("id").get_to(m.id);
+  j.at("instanceId").get_to(m.instanceId);
+}
+
 struct Browser_Acknowledge {
   UUID id;
   int instanceId;

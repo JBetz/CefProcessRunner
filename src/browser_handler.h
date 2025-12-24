@@ -12,7 +12,7 @@
 
 class BrowserProcessHandler;
 
-class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefContextMenuHandler {
+class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefLifeSpanHandler {
  public:
   BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle);
 
@@ -70,6 +70,10 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
                           CefCursorHandle cursor,
                           cef_cursor_type_t type,
                       const CefCursorInfo& custom_cursor_info) override;
+  
+  // CefLifeSpanHandler:
+  bool DoClose(CefRefPtr<CefBrowser> browser) override;
+  void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
   
 private:
   BrowserProcessHandler* browserProcessHandler;
