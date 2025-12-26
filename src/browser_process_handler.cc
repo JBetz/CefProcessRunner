@@ -236,7 +236,7 @@ template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
 
   try {
     json j = json::parse(payload);
-    return j.get<T>();
+    return j.get<RpcHeader>().arguments.get<T>();
   } catch (const nlohmann::json::parse_error& e_parse) {
     // Log parse error, location and a truncated payload preview (safe length)
     size_t previewLen = std::min<size_t>(payload.size(), 256);
@@ -358,7 +358,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
     
     if (rpc.className == "Client") {
        if (rpc.methodName == "Initialize") {
-        Client_Initialize request = jsonRequest.get<Client_Initialize>();
+        Client_Initialize request = rpc.arguments.get<Client_Initialize>();
         browserProcessHandler->OpenClientProcessHandle(request.clientProcessId);
         browserProcessHandler->SetClientMessageWindowHandle(
             reinterpret_cast<HWND>(request.clientMessageWindowHandle));
@@ -366,7 +366,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (rpc.methodName == "CreateBrowser") {
-        Client_CreateBrowser request = jsonRequest.get<Client_CreateBrowser>();
+        Client_CreateBrowser request = rpc.arguments.get<Client_CreateBrowser>();
         CefPostTask(TID_UI,
                     base::BindOnce(&BrowserProcessHandler::Client_CreateBrowserRpc,
                                    browserProcessHandler, rpc.id, request.url, request.rectangle));
@@ -433,26 +433,26 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (rpc.methodName == "Focus") {
-        Browser_Focus request = jsonRequest.get<Browser_Focus>();
+        Browser_Focus request = rpc.arguments.get<Browser_Focus>();
         browser->GetHost()->SetFocus(request.focus);
         continue;
       }
 
       if (rpc.methodName == "WasHidden") {
-        Browser_WasHidden request = jsonRequest.get<Browser_WasHidden>();
+        Browser_WasHidden request = rpc.arguments.get<Browser_WasHidden>();
         browser->GetHost()->WasHidden(request.hidden);
         continue;
       }
 
       if (rpc.methodName == "LoadUrl") {
-        Browser_LoadUrl request = jsonRequest.get<Browser_LoadUrl>();
+        Browser_LoadUrl request = rpc.arguments.get<Browser_LoadUrl>();
         CefRefPtr<CefFrame> frame = browser->GetMainFrame();
         frame->LoadURL(request.url);
         continue;
       }
 
       if (rpc.methodName == "NotifyResize") {
-        Browser_NotifyResize request = jsonRequest.get<Browser_NotifyResize>();
+        Browser_NotifyResize request = rpc.arguments.get<Browser_NotifyResize>();
         browserHandler->SetPageRectangle(request.rectangle);
         continue;
       }
@@ -493,7 +493,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (rpc.methodName == "OnMouseClick") {
-        Browser_OnMouseClick request = jsonRequest.get<Browser_OnMouseClick>();
+        Browser_OnMouseClick request = rpc.arguments.get<Browser_OnMouseClick>();
         browser->GetHost()->SendMouseClickEvent(
               request.event,
               static_cast<CefBrowserHost::MouseButtonType>(request.button),
@@ -502,14 +502,14 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (rpc.methodName == "OnMouseMove") {
-        Browser_OnMouseMove request = jsonRequest.get<Browser_OnMouseMove>();
+        Browser_OnMouseMove request = rpc.arguments.get<Browser_OnMouseMove>();
         browser->GetHost()->SendMouseMoveEvent(request.event,
                                                  request.mouseLeave);
         continue;
       }
 
       if (rpc.methodName == "OnMouseWheel") {
-        Browser_OnMouseWheel request = jsonRequest.get<Browser_OnMouseWheel>();
+        Browser_OnMouseWheel request = rpc.arguments.get<Browser_OnMouseWheel>();
         browser->GetHost()->SendMouseWheelEvent(request.event, request.deltaX,
                                                   request.deltaY);
         continue;
@@ -517,13 +517,13 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
 
       if (rpc.methodName == "OnKeyboardEvent") {
         Browser_OnKeyboardEvent request =
-            jsonRequest.get<Browser_OnKeyboardEvent>();
+            rpc.arguments.get<Browser_OnKeyboardEvent>();
         browser->GetHost()->SendKeyEvent(request.event);
         continue;
       }
 
       if (rpc.methodName == "Close") {
-        Browser_Close request = jsonRequest.get<Browser_Close>();
+        Browser_Close request = rpc.arguments.get<Browser_Close>();
         CefPostTask(TID_UI,
                     base::BindOnce(&BrowserProcessHandler::Browser_CloseRpc,
                                    browserProcessHandler, browser, request.forceClose));
@@ -537,11 +537,11 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (rpc.methodName == "Acknowledge") {
-        Browser_Acknowledge request = jsonRequest.get<Browser_Acknowledge>();
+        Browser_Acknowledge request = rpc.arguments.get<Browser_Acknowledge>();
         // Try to find a waiting entry
         SDL_LockMutex(browserProcessHandler->responseMapMutex);
         auto it =
-            browserProcessHandler->responseEntries.find(request.acknowledge);
+            browserProcessHandler->responseEntries.find(request.requestId);
         if (it != browserProcessHandler->responseEntries.end()) {
           ResponseEntry* e = it->second.get();
           SDL_LockMutex(e->mutex);

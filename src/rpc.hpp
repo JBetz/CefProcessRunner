@@ -114,6 +114,7 @@ struct RpcHeader {
   std::string className;
   std::string methodName;
   int instanceId;
+  json arguments;
 };
 
 inline void from_json(const json& j, RpcHeader& m) {
@@ -121,6 +122,7 @@ inline void from_json(const json& j, RpcHeader& m) {
   j.at("class").get_to(m.className);
   j.at("method").get_to(m.methodName);
   j.at("instanceId").get_to(m.instanceId);
+  j.at("arguments").get_to(m.arguments);
 }
 
 struct Client_Initialize {
@@ -562,11 +564,11 @@ inline void to_json(json& j, const Browser_TryCloseResponse& m) {
 }
 
 struct Browser_Acknowledge {
-  UUID acknowledge;
+  UUID requestId;
 };
 
 inline void from_json(const json& j, Browser_Acknowledge& m) {
-  j.at("acknowledge").get_to(m.acknowledge);
+  j.at("requestId").get_to(m.requestId);
 }
 
 struct Browser_OnBeforeClose {
