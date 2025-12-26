@@ -387,7 +387,13 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
           browserProcessHandler->GetBrowserHandler(request.instanceId);
       CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
       if (!browserHandler || !browser) {
-        SDL_Log("RpcWorkerThread: Browser with id=%d not found", request.instanceId);
+        RpcResponse response;
+        response.requestId = request.id;
+        response.success = false;
+        response.error =
+            printf("Browser instance %d not found.", request.instanceId);
+        json jsonResponse = response;
+        browserProcessHandler->SendMessage(jsonResponse.dump());
         continue;
       }
 
