@@ -148,14 +148,12 @@ inline void from_json(const json& j, Client_CreateBrowser& m) {
 }
 
 struct Browser_EvalJavaScript {
-  UUID id;
   std::string code;
   std::string scriptUrl;
   int startLine;
 };
 
 inline void from_json(const json& j, Browser_EvalJavaScript& m) {
-  j.at("id").get_to(m.id);
   j.at("code").get_to(m.code);
   j.at("scriptUrl").get_to(m.scriptUrl);
   j.at("startLine").get_to(m.startLine);

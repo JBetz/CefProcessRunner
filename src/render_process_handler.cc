@@ -362,23 +362,23 @@ bool RenderProcessHandler::OnProcessMessageReceived(
   SDL_Log("RenderProcessHandler received message: %s", name.ToString().c_str());
   bool handled = false;
   if (name == "Eval") {
-    SDL_Log("RenderProcessHandler received CefEvalRequest");
     const CefString& payload = message->GetArgumentList()->GetString(0);
-    Browser_EvalJavaScript evalRequest = json::parse(payload.ToString()).get<Browser_EvalJavaScript>();
+    RpcRequest request = json::parse(payload.ToString()).get<RpcRequest>();
+    Browser_EvalJavaScript arguments = request.arguments.get<Browser_EvalJavaScript>();
     CefRefPtr<CefV8Value> retval;
     CefRefPtr<CefV8Exception> exception;
     bool success =
-        context->Eval(CefString(evalRequest.code), CefString(evalRequest.scriptUrl), evalRequest.startLine, retval, exception);
+        context->Eval(CefString(arguments.code), CefString(arguments.scriptUrl), arguments.startLine, retval, exception);
     if (success && retval->IsPromise()) {
       CefRefPtr<CefV8Value> thenFunction = retval->GetValue("then");
       CefRefPtr<PromiseThenHandler> handler =
-          new PromiseThenHandler(frame, source_process, evalRequest.id);
+          new PromiseThenHandler(frame, source_process, request.id);
       CefRefPtr<CefV8Value> onResolvedFunc =
           CefV8Value::CreateFunction("onPromiseResolved", handler);
       thenFunction->ExecuteFunction(retval, {onResolvedFunc});
      } else {
       RpcResponse response;
-      response.requestId = evalRequest.id;
+      response.requestId = request.id;
       response.success = success;
       if (success) {
         CefRefPtr<CefV8Value> window = context->GetGlobal();
