@@ -368,7 +368,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
     CefRefPtr<CefV8Value> retval;
     CefRefPtr<CefV8Exception> exception;
     bool success =
-        context->Eval(CefString(evalRequest.evalJavaScript), CefString(evalRequest.scriptUrl), evalRequest.startLine, retval, exception);
+        context->Eval(CefString(evalRequest.code), CefString(evalRequest.scriptUrl), evalRequest.startLine, retval, exception);
     if (success && retval->IsPromise()) {
       CefRefPtr<CefV8Value> thenFunction = retval->GetValue("then");
       CefRefPtr<PromiseThenHandler> handler =

@@ -391,8 +391,6 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (rpc.methodName == "EvalJavaScript") {
-        Browser_EvalJavaScript evalRequest =
-            jsonRequest.get<Browser_EvalJavaScript>();
         CefRefPtr<CefFrame> frame = browser->GetMainFrame();
         CefRefPtr<CefProcessMessage> message =
             CefProcessMessage::Create(kEvalMessage);
