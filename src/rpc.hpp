@@ -109,7 +109,7 @@ inline void from_json(const json& j, CefKeyEvent& m) {
 }
 
 // Request messages
-struct RpcHeader {
+struct RpcRequest {
   UUID id;
   std::string className;
   std::string methodName;
@@ -117,7 +117,7 @@ struct RpcHeader {
   json arguments;
 };
 
-inline void from_json(const json& j, RpcHeader& m) {
+inline void from_json(const json& j, RpcRequest& m) {
   j.at("id").get_to(m.id);
   j.at("class").get_to(m.className);
   j.at("method").get_to(m.methodName);
@@ -286,15 +286,19 @@ inline void to_json(json& j, const Browser_FocusOut& m) {
  }
 
 // Response messages
-struct Client_CreateBrowserResponse {
+struct RpcResponse {
   UUID requestId;
-  int browserId;
+  bool success;
+  json returnValue;
+  json error;
 };
 
-inline void to_json(json& j, const Client_CreateBrowserResponse& m) {
+inline void to_json(json& j, const RpcResponse& m) {
   j = json::object();
   j["requestId"] = m.requestId;
-  j["browserId"] = m.browserId;
+  j["success"] = m.success;
+  j["returnValue"] = m.returnValue;
+  j["error"] = m.error;
 }
 
 struct EvalJavaScriptError {
@@ -320,25 +324,6 @@ inline void to_json(json& j, const EvalJavaScriptError& m) {
   j["startPosition"] = m.startPosition;
 }
 
-struct Browser_EvalJavaScriptResponse {
-  UUID requestId;
-  bool success;
-  std::optional<EvalJavaScriptError> error;
-  std::optional<std::string> result;
-};
-
-inline void to_json(json& j, const Browser_EvalJavaScriptResponse& m) {
-  j = json::object();
-  j["requestId"] = m.requestId;
-  j["success"] = m.success;
-  if (m.error.has_value()) {
-    j["error"] = m.error.value();
-  }
-  if (m.result.has_value()) {
-    j["result"] = m.result.value();
-  }
-}
-
 struct Browser_CanGoBack {
   UUID id;
   int instanceId;
@@ -349,27 +334,6 @@ inline void from_json(const json& j, Browser_CanGoBack& m) {
   j.at("instanceId").get_to(m.instanceId);
 }
 
-struct Browser_CanGoBackResponse {
-  UUID requestId;
-  bool canGoBack;
-};
-
-inline void to_json(json& j, const Browser_CanGoBackResponse& m) {
-  j = json::object();
-  j["requestId"] = m.requestId;
-  j["canGoBack"] = m.canGoBack;
-}
-
-struct Browser_CanGoForwardResponse {
-  UUID requestId;
-  bool canGoForward;
-};
-
-inline void to_json(json& j, const Browser_CanGoForwardResponse& m) {
-  j = json::object();
-  j["requestId"] = m.requestId;
-  j["canGoForward"] = m.canGoForward;
-}
 
 struct Browser_Focus {
   bool focus;
@@ -550,17 +514,6 @@ struct Browser_Close {
 
 inline void from_json(const json& j, Browser_Close& m) {
   j.at("forceClose").get_to(m.forceClose);
-}
-
-struct Browser_TryCloseResponse {
-  UUID requestId;
-  bool canClose;
-};
-
-inline void to_json(json& j, const Browser_TryCloseResponse& m) {
-  j = json::object();
-  j["requestId"] = m.requestId;
-  j["canClose"] = m.canClose;
 }
 
 struct Browser_Acknowledge {

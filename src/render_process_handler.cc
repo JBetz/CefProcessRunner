@@ -333,9 +333,9 @@ class PromiseThenHandler : public CefV8Handler {
         CefProcessMessage::Create(kOnEvalMessage);
     CefRefPtr<CefDictionaryValue> messageArguments =
         CefDictionaryValue::Create();
-    Browser_EvalJavaScriptResponse response;
+    RpcResponse response;
     response.requestId = messageId;
-    response.result = result.ToString();
+    response.returnValue = result.ToString();
     json jsonResponse = response;
     responseMessage->GetArgumentList()->SetString(0, jsonResponse.dump());
     frame->SendProcessMessage(sourceProcessId, responseMessage);
@@ -377,7 +377,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
           CefV8Value::CreateFunction("onPromiseResolved", handler);
       thenFunction->ExecuteFunction(retval, {onResolvedFunc});
      } else {
-      Browser_EvalJavaScriptResponse response;
+      RpcResponse response;
       response.requestId = evalRequest.id;
       response.success = success;
       if (success) {
@@ -389,7 +389,7 @@ bool RenderProcessHandler::OnProcessMessageReceived(
         const CefString& result =
             stringifyFunction->ExecuteFunction(jsonObj, stringifyArguments)
                 ->GetStringValue();
-        response.result = result.ToString();
+        response.returnValue = result.ToString();
       } else {
         EvalJavaScriptError error;
         error.endColumn = exception->GetEndColumn();
@@ -401,7 +401,8 @@ bool RenderProcessHandler::OnProcessMessageReceived(
         error.sourceLine = exception->GetSourceLine().ToString();
         error.startColumn = exception->GetStartColumn();
         error.startPosition = exception->GetStartPosition();
-        response.error = error;
+        json errorJson = error;
+        response.error = errorJson;
       }
       CefRefPtr<CefProcessMessage> responseMessage =
           CefProcessMessage::Create(kOnEvalMessage);
