@@ -1,4 +1,4 @@
-﻿#include "browser_handler.h"
+#include "browser_handler.h"
 #include "browser_process_handler.h"
 #include "rpc.hpp"
 #include <rpc.h>
@@ -78,11 +78,14 @@ void BrowserHandler::OnAcceleratedPaint(
     PaintElementType type,
     const RectList& dirtyRects,
     const CefAcceleratedPaintInfo& info) {
-  Browser_OnAcceleratedPaint message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  message.elementType = type;
-  message.format = info.format;
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnAcceleratedPaint";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnAcceleratedPaint arguments;
+  arguments.elementType = type;
+  arguments.format = info.format;
 
   // Duplicate the shared texture handle into the application process
   // (hardcoded PID = 1 for now) before sending it.
@@ -103,26 +106,31 @@ void BrowserHandler::OnAcceleratedPaint(
                          DUPLICATE_SAME_ACCESS)) {
       SDL_Log("Error duplicating shared texture: DuplicateHandle() call failed");
     } else {
-      message.sharedTextureHandle = reinterpret_cast<uintptr_t>(duplicateHandle);
+      arguments.sharedTextureHandle = reinterpret_cast<uintptr_t>(duplicateHandle);
     }
   }
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
-  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(message.id);
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
+  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(request.id);
 }
 
 void BrowserHandler::OnTextSelectionChanged(
     CefRefPtr<CefBrowser> browser_,
     const CefString& selected_text,
     const CefRange& selected_range) {
-  Browser_OnTextSelectionChanged message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  message.selectedText = selected_text.ToString();
-  message.selectedRangeFrom = selected_range.from;
-  message.selectedRangeTo = selected_range.to;
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnTextSelectionChanged";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnTextSelectionChanged arguments;
+  arguments.selectedText = selected_text.ToString();
+  arguments.selectedRangeFrom = selected_range.from;
+  arguments.selectedRangeTo = selected_range.to;
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
 }
 
 
@@ -151,22 +159,30 @@ void BrowserHandler::OnPopupSize(CefRefPtr<CefBrowser> browser_,
 void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser_,
                                     CefRefPtr<CefFrame> frame,
                                     const CefString& url) {
-  Browser_OnAddressChange message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  message.url = url.ToString();
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnAddressChange";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnAddressChange arguments;
+  arguments.url = url.ToString();
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
 }
 
 void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser_,
                                    const CefString& title) {
-  Browser_OnTitleChange message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  message.title = title.ToString();
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnTitleChange";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnTitleChange arguments;
+  arguments.title = title.ToString();
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
 }
 
 bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
@@ -174,39 +190,51 @@ bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
                                       const CefString& message,
                                       const CefString& source,
                                       int line) {
-  Browser_OnConsoleMessage msg;
-  msg.id = CreateUuid();
-  msg.instanceId = browser_->GetIdentifier();
-  msg.level = static_cast<int>(level);
-  msg.message = message.ToString();
-  msg.source = source.ToString();
-  msg.line = line;
-  json j = msg;
-  browserProcessHandler->SendMessage(j.dump());
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnConsoleMessage";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnConsoleMessage arguments;
+  arguments.level = static_cast<int>(level);
+  arguments.message = message.ToString();
+  arguments.source = source.ToString();
+  arguments.line = line;
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
   return true;
 }
 
 void BrowserHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser_,
                                               double progress) {
-  Browser_OnLoadingProgressChange message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  message.progress = progress;
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnLoadingProgressChange";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnLoadingProgressChange arguments;
+  arguments.progress = progress;
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
 }
 
 bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
                                     CefCursorHandle cursor,
                                     cef_cursor_type_t type,
                                     const CefCursorInfo& custom_cursor_info) {
-  Browser_OnCursorChange message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  message.cursorHandle = reinterpret_cast<uintptr_t>(cursor);
-  message.cursorType = static_cast<int>(type);
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnCursorChange";
+  request.instanceId = browser_->GetIdentifier();
+  Browser_OnCursorChange arguments;
+  arguments.cursorHandle = reinterpret_cast<uintptr_t>(cursor);
+  arguments.cursorType = static_cast<int>(type);
+  request.arguments = arguments;
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
   return true;
 }
 
@@ -216,10 +244,13 @@ bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser_) {
 
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
   browserProcessHandler->RemoveBrowserHandler(browser_->GetIdentifier());
-  Browser_OnBeforeClose message;
-  message.id = CreateUuid();
-  message.instanceId = browser_->GetIdentifier();
-  json j = message;
-  browserProcessHandler->SendMessage(j.dump());
-  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(message.id);
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Browser";
+  request.methodName = "OnBeforeClose";
+  request.instanceId = browser_->GetIdentifier();
+  request.arguments = json::object();
+  json jsonRequest = request;
+  browserProcessHandler->SendMessage(jsonRequest.dump());
+  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(request.id);
 }
