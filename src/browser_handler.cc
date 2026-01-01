@@ -39,6 +39,10 @@ CefRefPtr<CefLifeSpanHandler> BrowserHandler::GetLifeSpanHandler() {
   return this;
 }
 
+CefRefPtr<CefContextMenuHandler> BrowserHandler::GetContextMenuHandler() {
+  return this;
+}
+
 bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,
@@ -254,3 +258,28 @@ void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
   browserProcessHandler->SendMessage(jsonRequest.dump());
   browserProcessHandler->WaitForResponse<Browser_Acknowledge>(request.id);
 }
+
+void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
+                                         CefRefPtr<CefFrame> frame,
+                                         CefRefPtr<CefContextMenuParams> params,
+                                         CefRefPtr<CefMenuModel> model) {
+}
+
+bool BrowserHandler::RunContextMenu(CefRefPtr<CefBrowser> browser_,
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefContextMenuParams> params,
+                                    CefRefPtr<CefMenuModel> model,
+                                    CefRefPtr<CefRunContextMenuCallback> callback) {
+  return false;
+}
+
+bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser_,
+                                          CefRefPtr<CefFrame> frame,
+                                          CefRefPtr<CefContextMenuParams> params,
+                                          int command_id,
+                                          cef_event_flags_t event_flags) {
+  return false;
+}
+
+void BrowserHandler::OnContextMenuDismissed(CefRefPtr<CefBrowser> browser_,
+                                            CefRefPtr<CefFrame> frame) {}
