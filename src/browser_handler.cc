@@ -101,9 +101,6 @@ void BrowserHandler::OnAcceleratedPaint(
   Browser_OnAcceleratedPaint arguments;
   arguments.elementType = type;
   arguments.format = info.format;
-
-  // Duplicate the shared texture handle into the application process
-  // (hardcoded PID = 1 for now) before sending it.
   HANDLE sourceHandle = info.shared_texture_handle;
   std::optional<HANDLE> applicationProcessHandle =
       browserProcessHandler->GetClientProcessHandle();
