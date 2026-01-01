@@ -215,7 +215,7 @@ class FocusOutHandler : public CefV8Handler {
     RpcRequest request;
     request.id = CreateUuid();
     request.className = "Browser";
-    request.methodName = "FocusOut";
+    request.methodName = "OnFocusOut";
     request.instanceId = frame->GetBrowser()->GetIdentifier();
     Browser_FocusOut focusOutArguments;
     if (!relatedTarget->IsNull()) {
