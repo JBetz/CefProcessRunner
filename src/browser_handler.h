@@ -19,6 +19,8 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
   CefRefPtr<CefBrowser> GetBrowser();
   void SetBrowser(CefRefPtr<CefBrowser> browser);
   void SetPageRectangle(const CefRect& rect);
+  UUID SendRpcRequest(std::string methodName, json arguments);
+  UUID SendRpcRequest(std::string methodName);
 
   // CefClient:
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
