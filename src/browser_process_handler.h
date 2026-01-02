@@ -28,6 +28,10 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
   void OnContextInitialized() override;
   
+  // RPC handling.
+  void HandleRpcRequest(RpcRequest request);
+  void HandleRpcResponse(RpcResponse response);
+
   // Incoming RPC messages.
   void Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle);
   void Client_ShutdownRpc();

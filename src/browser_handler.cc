@@ -27,19 +27,23 @@ void BrowserHandler::SetPageRectangle(const CefRect& rect) {
   this->pageRectangle = rect;
 }
 
-UUID BrowserHandler::SendRpcRequest(std::string methodName, json arguments) {
+std::optional<UUID> BrowserHandler::SendRpcRequest(std::string methodName, json arguments) {
+  if (this->browser == nullptr) {
+    SDL_Log("WARNING: Attempted to send RPC request '%s' but browser is not available yet or has already been destroyed.", methodName.c_str());
+    return std::nullopt;
+  }
   RpcRequest request;
   request.id = CreateUuid();
   request.className = "Browser";
   request.methodName = methodName;
   request.instanceId = this->browser->GetIdentifier();
-  request.arguments = json::object();
+  request.arguments = arguments;
   json jsonRequest = request;
   browserProcessHandler->SendMessage(jsonRequest.dump());
   return request.id;
 }
 
-UUID BrowserHandler::SendRpcRequest(std::string methodName) {
+std::optional<UUID> BrowserHandler::SendRpcRequest(std::string methodName) {
   return this->SendRpcRequest(methodName, json::object());
 }
 
@@ -122,8 +126,11 @@ void BrowserHandler::OnAcceleratedPaint(
     }
   }
   json jsonArguments = arguments;
-  UUID requestId = this->SendRpcRequest("OnAcceleratedPaint", jsonArguments);
-  browserProcessHandler->WaitForResponse<Acknowledge>(requestId);
+  std::optional<UUID> requestId = this->SendRpcRequest("OnAcceleratedPaint", jsonArguments);
+  if (!requestId.has_value()) {
+    return;
+  }
+  browserProcessHandler->WaitForResponse<std::monostate>(requestId.value());
 }
 
 void BrowserHandler::OnTextSelectionChanged(
@@ -219,8 +226,11 @@ bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser_) {
 
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
   browserProcessHandler->RemoveBrowserHandler(browser_->GetIdentifier());
-  UUID requestId = this->SendRpcRequest("OnBeforeClose");
-  browserProcessHandler->WaitForResponse<Acknowledge>(requestId);
+  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforeClose");
+  if (!requestId.has_value()) {
+    return;
+  }
+  browserProcessHandler->WaitForResponse<std::monostate>(requestId.value());
 }
 
 void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
@@ -234,9 +244,12 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
   arguments.nodeEditFlags = static_cast<int>(params->GetEditStateFlags());
   arguments.selectionText = params->GetSelectionText().ToString();
   json jsonArguments = arguments;
-  UUID requestId = this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
+  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
+  if (!requestId.has_value()) {
+    return;
+  }
   ContextMenuConfiguration config = browserProcessHandler->WaitForResponse<ContextMenuConfiguration>(
-          requestId);
+          requestId.value());
   std::vector<ContextMenuCommand> commands = config.commands;
   for (size_t i = 0; i < commands.size(); i++) {
     ContextMenuCommand command = commands[i];

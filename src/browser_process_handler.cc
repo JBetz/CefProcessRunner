@@ -207,6 +207,219 @@ void BrowserProcessHandler::SendMessage(std::string payload) {
   outgoingMessageQueue.push(payload);
 }
 
+void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
+  if (request.className == "Client") {
+    if (request.methodName == "Initialize") {
+      Client_Initialize arguments = request.arguments.get<Client_Initialize>();
+      this->OpenClientProcessHandle(arguments.clientProcessId);
+      this->SetClientMessageWindowHandle(
+          reinterpret_cast<HWND>(arguments.clientMessageWindowHandle));
+      return;
+    }
+
+    if (request.methodName == "CreateBrowser") {
+      Client_CreateBrowser arguments =
+          request.arguments.get<Client_CreateBrowser>();
+      CefPostTask(TID_UI, base::BindOnce(
+                              &BrowserProcessHandler::Client_CreateBrowserRpc,
+                              this, request.id, arguments.url,
+                              arguments.rectangle));
+      return;
+    }
+
+    if (request.methodName == "Shutdown") {
+      CefPostTask(TID_UI,
+                  base::BindOnce(&BrowserProcessHandler::Client_ShutdownRpc, this));
+      return;
+    }
+  }
+
+  if (request.className == "Browser") {
+    CefRefPtr<BrowserHandler> browserHandler = this->GetBrowserHandler(request.instanceId);
+    CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
+    if (!browserHandler || !browser) {
+      RpcResponse response;
+      response.requestId = request.id;
+      response.success = false;
+      response.error =
+          printf("Browser instance %d not found.", request.instanceId);
+      json jsonResponse = response;
+      this->SendMessage(jsonResponse.dump());
+      return;
+    }
+
+    if (request.methodName == "EvalJavaScript") {
+      CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+      CefRefPtr<CefProcessMessage> message =
+          CefProcessMessage::Create(kEvalMessage);
+      json jsonRequest = request;
+      message->GetArgumentList()->SetString(0, jsonRequest.dump());
+      frame->SendProcessMessage(PID_RENDERER, message);
+      return;
+    };
+
+    if (request.methodName == "CanGoBack") {
+      RpcResponse response;
+      response.requestId = request.id;
+      response.success = true;
+      response.returnValue = browser->CanGoBack();
+      json jsonResponse = response;
+      this->SendMessage(jsonResponse.dump());
+      return;
+    }
+
+    if (request.methodName == "CanGoForward") {
+      RpcResponse response;
+      response.requestId = request.id;
+      response.success = true;
+      response.returnValue = browser->CanGoForward();
+      json jsonResponse = response;
+      this->SendMessage(jsonResponse.dump());
+      return;
+    }
+
+    if (request.methodName == "Back") {
+      browser->GoBack();
+      return;
+    }
+
+    if (request.methodName == "Forward") {
+      browser->GoForward();
+      return;
+    }
+
+    if (request.methodName == "Reload") {
+      browser->Reload();
+      return;
+    }
+
+    if (request.methodName == "Focus") {
+      Browser_Focus arguments = request.arguments.get<Browser_Focus>();
+      browser->GetHost()->SetFocus(arguments.focus);
+      return;
+    }
+
+    if (request.methodName == "WasHidden") {
+      Browser_WasHidden arguments = request.arguments.get<Browser_WasHidden>();
+      browser->GetHost()->WasHidden(arguments.hidden);
+      return;
+    }
+
+    if (request.methodName == "LoadUrl") {
+      Browser_LoadUrl arguments = request.arguments.get<Browser_LoadUrl>();
+      CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+      frame->LoadURL(arguments.url);
+      return;
+    }
+
+    if (request.methodName == "NotifyResize") {
+      Browser_NotifyResize arguments =
+          request.arguments.get<Browser_NotifyResize>();
+      browserHandler->SetPageRectangle(arguments.rectangle);
+      return;
+    }
+
+    if (request.methodName == "Cut") {
+      browser->GetFocusedFrame()->Cut();
+      return;
+    }
+
+    if (request.methodName == "Copy") {
+      browser->GetFocusedFrame()->Copy();
+      return;
+    }
+
+    if (request.methodName == "Paste") {
+      browser->GetFocusedFrame()->Paste();
+      return;
+    }
+
+    if (request.methodName == "Delete") {
+      browser->GetFocusedFrame()->Delete();
+      return;
+    }
+
+    if (request.methodName == "Undo") {
+      browser->GetFocusedFrame()->Undo();
+      return;
+    }
+
+    if (request.methodName == "Redo") {
+      browser->GetFocusedFrame()->Redo();
+      return;
+    }
+
+    if (request.methodName == "SelectAll") {
+      browser->GetFocusedFrame()->SelectAll();
+      return;
+    }
+
+    if (request.methodName == "OnMouseClick") {
+      Browser_OnMouseClick arguments =
+          request.arguments.get<Browser_OnMouseClick>();
+      browser->GetHost()->SendMouseClickEvent(
+          arguments.event,
+          static_cast<CefBrowserHost::MouseButtonType>(arguments.button),
+          arguments.mouseUp, arguments.clickCount);
+      return;
+    }
+
+    if (request.methodName == "OnMouseMove") {
+      Browser_OnMouseMove arguments =
+          request.arguments.get<Browser_OnMouseMove>();
+      browser->GetHost()->SendMouseMoveEvent(arguments.event,
+                                             arguments.mouseLeave);
+      return;
+    }
+
+    if (request.methodName == "OnMouseWheel") {
+      Browser_OnMouseWheel arguments =
+          request.arguments.get<Browser_OnMouseWheel>();
+      browser->GetHost()->SendMouseWheelEvent(arguments.event, arguments.deltaX,
+                                              arguments.deltaY);
+      return;
+    }
+
+    if (request.methodName == "OnKeyboardEvent") {
+      Browser_OnKeyboardEvent arguments =
+          request.arguments.get<Browser_OnKeyboardEvent>();
+      browser->GetHost()->SendKeyEvent(arguments.event);
+      return;
+    }
+
+    if (request.methodName == "Close") {
+      Browser_Close arguments = request.arguments.get<Browser_Close>();
+      CefPostTask(
+          TID_UI,
+          base::BindOnce(&BrowserProcessHandler::Browser_CloseRpc, this, browser, arguments.forceClose));
+      return;
+    }
+
+    if (request.methodName == "TryClose") {
+      CefPostTask(TID_UI,
+                  base::BindOnce(&BrowserProcessHandler::Browser_TryCloseRpc, this, browser, request.id));
+      return;
+    }
+  }
+
+  SDL_Log("RpcWorkerThread: unknown message method '%s'",
+          request.methodName.c_str());
+}
+
+void BrowserProcessHandler::HandleRpcResponse(RpcResponse response) {
+  SDL_LockMutex(this->responseMapMutex);
+  auto it = this->responseEntries.find(response.requestId);
+  if (it != this->responseEntries.end()) {
+    ResponseEntry* e = it->second.get();
+    SDL_LockMutex(e->mutex);
+    e->payload = response.returnValue.dump();
+    e->ready = true;
+    SDL_SignalCondition(e->cond);
+    SDL_UnlockMutex(e->mutex);
+  }
+  SDL_UnlockMutex(this->responseMapMutex);
+}
+
 template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
   std::unique_ptr<ResponseEntry> entry = std::make_unique<ResponseEntry>();
 
@@ -237,7 +450,7 @@ template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
 
   try {
     json j = json::parse(payload);
-    return j.get<RpcRequest>().arguments.get<T>();
+    return j.get<T>();
   } catch (const nlohmann::json::parse_error& e_parse) {
     // Log parse error, location and a truncated payload preview (safe length)
     size_t previewLen = std::min<size_t>(payload.size(), 256);
@@ -337,240 +550,40 @@ int BrowserProcessHandler::RpcServerThread(void* browserProcessHandlerPtr) {
 }
 
 int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
-  CefRefPtr<BrowserProcessHandler> browserProcessHandler = base::WrapRefCounted<BrowserProcessHandler>(static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
+  CefRefPtr<BrowserProcessHandler> browserProcessHandler =
+      base::WrapRefCounted<BrowserProcessHandler>(
+          static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
   while (true) {
-    std::string msg = browserProcessHandler->incomingMessageQueue.pop();
+    std::string message = browserProcessHandler->incomingMessageQueue.pop();
 
-    json jsonRequest;
+    json jsonMessage;
     try {
-      jsonRequest = json::parse(msg);
+      jsonMessage = json::parse(message);
     } catch (const nlohmann::json::parse_error& e_parse) {
-      size_t previewLen = std::min<size_t>(msg.size(), 256);
-      std::string preview = msg.substr(0, previewLen);
-      SDL_Log("RpcWorkerThread: JSON parse_error: %s at byte=%u payload_preview='%s'",
-              e_parse.what(), static_cast<unsigned int>(e_parse.byte), preview.c_str());
+      size_t previewLen = std::min<size_t>(message.size(), 256);
+      std::string preview = message.substr(0, previewLen);
+      SDL_Log(
+          "RpcWorkerThread: JSON parse_error: %s at byte=%u "
+          "payload_preview='%s'",
+          e_parse.what(), static_cast<unsigned int>(e_parse.byte),
+          preview.c_str());
       continue;
     } catch (const std::exception& e) {
       SDL_Log("RpcWorkerThread: JSON exception: %s", e.what());
       continue;
     }
 
-    RpcRequest request = jsonRequest.get<RpcRequest>();
-    
-    if (request.className == "Client") {
-       if (request.methodName == "Initialize") {
-        Client_Initialize arguments = request.arguments.get<Client_Initialize>();
-        browserProcessHandler->OpenClientProcessHandle(arguments.clientProcessId);
-        browserProcessHandler->SetClientMessageWindowHandle(
-            reinterpret_cast<HWND>(arguments.clientMessageWindowHandle));
-        continue;
-      }
-
-      if (request.methodName == "CreateBrowser") {
-        Client_CreateBrowser arguments = request.arguments.get<Client_CreateBrowser>();
-        CefPostTask(TID_UI,
-                    base::BindOnce(&BrowserProcessHandler::Client_CreateBrowserRpc,
-                                   browserProcessHandler, request.id, arguments.url, arguments.rectangle));
-        continue;
-      }
-
-      if (request.methodName == "Shutdown") {
-        CefPostTask(TID_UI,
-                    base::BindOnce(&BrowserProcessHandler::Client_ShutdownRpc,
-                                   browserProcessHandler));
-        continue;
-      }
+    if (!jsonMessage.contains("requestId")) {
+      browserProcessHandler->HandleRpcRequest(jsonMessage.get<RpcRequest>());
     }
-
-    if (request.className == "Browser") {
-      CefRefPtr<BrowserHandler> browserHandler = 
-          browserProcessHandler->GetBrowserHandler(request.instanceId);
-      CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
-      if (!browserHandler || !browser) {
-        RpcResponse response;
-        response.requestId = request.id;
-        response.success = false;
-        response.error =
-            printf("Browser instance %d not found.", request.instanceId);
-        json jsonResponse = response;
-        browserProcessHandler->SendMessage(jsonResponse.dump());
-        continue;
-      }
-
-      if (request.methodName == "EvalJavaScript") {
-        CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-        CefRefPtr<CefProcessMessage> message =
-            CefProcessMessage::Create(kEvalMessage);
-        message->GetArgumentList()->SetString(0, msg);
-        frame->SendProcessMessage(PID_RENDERER, message);
-        continue;
-      };
-
-      if (request.methodName == "CanGoBack") {
-        RpcResponse response;
-        response.requestId = request.id;
-        response.success = true;
-        response.returnValue = browser->CanGoBack();
-        json jsonResponse = response;
-        browserProcessHandler->SendMessage(jsonResponse.dump());
-        continue;
-      }
-
-      if (request.methodName == "CanGoForward") {
-        RpcResponse response;
-        response.requestId = request.id;
-        response.success = true;
-        response.returnValue = browser->CanGoForward();
-        json jsonResponse = response;
-        browserProcessHandler->SendMessage(jsonResponse.dump());
-        continue;
-      }
-
-      if (request.methodName == "Back") {
-        browser->GoBack();
-        continue;
-      }
-
-      if (request.methodName == "Forward") {
-        browser->GoForward();
-        continue;
-      }
-
-      if (request.methodName == "Reload") {
-        browser->Reload();
-        continue;
-      }
-
-      if (request.methodName == "Focus") {
-        Browser_Focus arguments = request.arguments.get<Browser_Focus>();
-        browser->GetHost()->SetFocus(arguments.focus);
-        continue;
-      }
-
-      if (request.methodName == "WasHidden") {
-        Browser_WasHidden arguments = request.arguments.get<Browser_WasHidden>();
-        browser->GetHost()->WasHidden(arguments.hidden);
-        continue;
-      }
-
-      if (request.methodName == "LoadUrl") {
-        Browser_LoadUrl arguments = request.arguments.get<Browser_LoadUrl>();
-        CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-        frame->LoadURL(arguments.url);
-        continue;
-      }
-
-      if (request.methodName == "NotifyResize") {
-        Browser_NotifyResize arguments = request.arguments.get<Browser_NotifyResize>();
-        browserHandler->SetPageRectangle(arguments.rectangle);
-        continue;
-      }
-
-      if (request.methodName == "Cut") {
-        browser->GetFocusedFrame()->Cut();
-        continue;
-      }
-
-      if (request.methodName == "Copy") {
-        browser->GetFocusedFrame()->Copy();
-        continue;
-      }
-
-      if (request.methodName == "Paste") {
-        browser->GetFocusedFrame()->Paste();
-        continue;
-      }
-
-      if (request.methodName == "Delete") {
-        browser->GetFocusedFrame()->Delete();
-        continue;
-      }
-
-      if (request.methodName == "Undo") {
-        browser->GetFocusedFrame()->Undo();
-        continue;
-      }
-
-      if (request.methodName == "Redo") {
-        browser->GetFocusedFrame()->Redo();
-        continue;
-      }
-
-      if (request.methodName == "SelectAll") {
-        browser->GetFocusedFrame()->SelectAll();
-        continue;
-      }
-
-      if (request.methodName == "OnMouseClick") {
-        Browser_OnMouseClick arguments = request.arguments.get<Browser_OnMouseClick>();
-        browser->GetHost()->SendMouseClickEvent(
-              arguments.event,
-              static_cast<CefBrowserHost::MouseButtonType>(arguments.button),
-              arguments.mouseUp, arguments.clickCount);
-        continue;
-      }
-
-      if (request.methodName == "OnMouseMove") {
-        Browser_OnMouseMove arguments = request.arguments.get<Browser_OnMouseMove>();
-        browser->GetHost()->SendMouseMoveEvent(arguments.event,
-                                                 arguments.mouseLeave);
-        continue;
-      }
-
-      if (request.methodName == "OnMouseWheel") {
-        Browser_OnMouseWheel arguments = request.arguments.get<Browser_OnMouseWheel>();
-        browser->GetHost()->SendMouseWheelEvent(arguments.event, arguments.deltaX,
-                                                  arguments.deltaY);
-        continue;
-      }
-
-      if (request.methodName == "OnKeyboardEvent") {
-        Browser_OnKeyboardEvent arguments =
-            request.arguments.get<Browser_OnKeyboardEvent>();
-        browser->GetHost()->SendKeyEvent(arguments.event);
-        continue;
-      }
-
-      if (request.methodName == "Close") {
-        Browser_Close arguments = request.arguments.get<Browser_Close>();
-        CefPostTask(TID_UI,
-                    base::BindOnce(&BrowserProcessHandler::Browser_CloseRpc,
-                                   browserProcessHandler, browser, arguments.forceClose));
-        continue;
-      }
-
-      if (request.methodName == "TryClose") {
-        CefPostTask(TID_UI, base::BindOnce(&BrowserProcessHandler::Browser_TryCloseRpc,
-                                           browserProcessHandler, browser, request.id));
-        continue;
-      }
-
-      if (request.methodName == "Acknowledge") {
-        Acknowledge arguments = request.arguments.get<Acknowledge>();
-        // Try to find a waiting entry
-        SDL_LockMutex(browserProcessHandler->responseMapMutex);
-        auto it =
-            browserProcessHandler->responseEntries.find(arguments.requestId);
-        if (it != browserProcessHandler->responseEntries.end()) {
-          ResponseEntry* e = it->second.get();
-          SDL_LockMutex(e->mutex);
-          e->payload = msg;
-          e->ready = true;
-          SDL_SignalCondition(e->cond);
-          SDL_UnlockMutex(e->mutex);
-        }
-        SDL_UnlockMutex(browserProcessHandler->responseMapMutex);
-        continue;
-      }
+    else {
+      browserProcessHandler->HandleRpcResponse(jsonMessage.get<RpcResponse>());
     }
-
-    SDL_Log("RpcWorkerThread: unknown message method '%s'", request.methodName.c_str());
   }
-
   return 0;
 }
 
-template Acknowledge
-    BrowserProcessHandler::WaitForResponse<Acknowledge>(UUID);
+template std::monostate 
+    BrowserProcessHandler::WaitForResponse<std::monostate>(UUID);
 template ContextMenuConfiguration
     BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);

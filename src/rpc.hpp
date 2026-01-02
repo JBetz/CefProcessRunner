@@ -5,8 +5,23 @@
 #include <optional>
 #include <rpc.h>
 #include <string>
+#include <variant>
 
 using json = nlohmann::json;
+
+// monostate - must be in nlohmann namespace for ADL to work
+namespace nlohmann {
+  template <>
+  struct adl_serializer<std::monostate> {
+    static void to_json(json& j, const std::monostate&) {
+      j = nullptr;
+    }
+
+    static void from_json(const json&, std::monostate&) {
+      // monostate has no state to restore
+    }
+  };
+}
 
 // HANDLE
 inline void to_json(json& j, const HANDLE& m) {
@@ -134,6 +149,7 @@ inline void to_json(json& j, const RpcRequest& m) {
   j["arguments"] = m.arguments;
 }
 
+// Response messages
 struct Client_Initialize {
   int clientProcessId;
   uintptr_t clientMessageWindowHandle;
@@ -290,6 +306,13 @@ inline void to_json(json& j, const RpcResponse& m) {
   j["error"] = m.error;
 }
 
+inline void from_json(const json& j, RpcResponse& m) {
+  j.at("requestId").get_to(m.requestId);
+  j.at("success").get_to(m.success);
+  j.at("returnValue").get_to(m.returnValue);
+  j.at("error").get_to(m.error);
+}
+
 struct EvalJavaScriptError {
   int endColumn;
   int endPosition;
@@ -444,14 +467,6 @@ struct Browser_Close {
 
 inline void from_json(const json& j, Browser_Close& m) {
   j.at("forceClose").get_to(m.forceClose);
-}
-
-struct Acknowledge {
-  UUID requestId;
-};
-
-inline void from_json(const json& j, Acknowledge& m) {
-  j.at("requestId").get_to(m.requestId);
 }
 
 struct Browser_OnBeforeContextMenu {
