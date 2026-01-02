@@ -453,3 +453,31 @@ struct Browser_Acknowledge {
 inline void from_json(const json& j, Browser_Acknowledge& m) {
   j.at("requestId").get_to(m.requestId);
 }
+
+struct Browser_OnBeforeContextMenu {
+  int nodeType;
+  int nodeMedia;
+  int nodeMediaStateFlags;
+  int nodeEditFlags;
+  std::string selectionText;
+};
+
+inline void to_json(json& j, const Browser_OnBeforeContextMenu& m) {
+  j = json::object();
+  j["nodeType"] = m.nodeType;
+  j["nodeMedia"] = m.nodeMedia;
+  j["nodeMediaStateFlags"] = m.nodeMediaStateFlags;
+  j["nodeEditFlags"] = m.nodeEditFlags;
+  j["selectionText"] = m.selectionText;
+}
+
+// Context menu
+struct ContextMenuCommand {
+  int index;
+  int commandId;
+  std::string label;
+};
+
+struct ContextMenuConfiguration {
+  std::vector<ContextMenuCommand> commands;
+};

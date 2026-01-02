@@ -572,3 +572,5 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
 
 template Browser_Acknowledge
     BrowserProcessHandler::WaitForResponse<Browser_Acknowledge>(UUID);
+template ContextMenuConfiguration
+    BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);

@@ -227,6 +227,21 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
                                          CefRefPtr<CefFrame> frame,
                                          CefRefPtr<CefContextMenuParams> params,
                                          CefRefPtr<CefMenuModel> model) {
+  Browser_OnBeforeContextMenu arguments;
+  arguments.nodeType = static_cast<int>(params->GetTypeFlags());
+  arguments.nodeMedia = static_cast<int>(params->GetMediaType());
+  arguments.nodeMediaStateFlags = static_cast<int>(params->GetMediaStateFlags());
+  arguments.nodeEditFlags = static_cast<int>(params->GetEditStateFlags());
+  arguments.selectionText = params->GetSelectionText().ToString();
+  json jsonArguments = arguments;
+  UUID requestId = this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
+  ContextMenuConfiguration config = browserProcessHandler->WaitForResponse<ContextMenuConfiguration>(
+          requestId);
+  std::vector<ContextMenuCommand> commands = config.commands;
+  for (size_t i = 0; i < commands.size(); i++) {
+    ContextMenuCommand command = commands[i];
+    model->InsertItemAt(command.index, command.commandId, command.label);
+  }
 }
 
 bool BrowserHandler::RunContextMenu(CefRefPtr<CefBrowser> browser_,
