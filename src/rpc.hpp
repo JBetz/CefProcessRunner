@@ -446,11 +446,11 @@ inline void from_json(const json& j, Browser_Close& m) {
   j.at("forceClose").get_to(m.forceClose);
 }
 
-struct Browser_Acknowledge {
+struct Acknowledge {
   UUID requestId;
 };
 
-inline void from_json(const json& j, Browser_Acknowledge& m) {
+inline void from_json(const json& j, Acknowledge& m) {
   j.at("requestId").get_to(m.requestId);
 }
 

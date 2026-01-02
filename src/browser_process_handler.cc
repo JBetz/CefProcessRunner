@@ -546,7 +546,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
       }
 
       if (request.methodName == "Acknowledge") {
-        Browser_Acknowledge arguments = request.arguments.get<Browser_Acknowledge>();
+        Acknowledge arguments = request.arguments.get<Acknowledge>();
         // Try to find a waiting entry
         SDL_LockMutex(browserProcessHandler->responseMapMutex);
         auto it =
@@ -570,7 +570,7 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
   return 0;
 }
 
-template Browser_Acknowledge
-    BrowserProcessHandler::WaitForResponse<Browser_Acknowledge>(UUID);
+template Acknowledge
+    BrowserProcessHandler::WaitForResponse<Acknowledge>(UUID);
 template ContextMenuConfiguration
     BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);

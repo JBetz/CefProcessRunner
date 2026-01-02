@@ -123,7 +123,7 @@ void BrowserHandler::OnAcceleratedPaint(
   }
   json jsonArguments = arguments;
   UUID requestId = this->SendRpcRequest("OnAcceleratedPaint", jsonArguments);
-  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(requestId);
+  browserProcessHandler->WaitForResponse<Acknowledge>(requestId);
 }
 
 void BrowserHandler::OnTextSelectionChanged(
@@ -220,7 +220,7 @@ bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser_) {
 void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
   browserProcessHandler->RemoveBrowserHandler(browser_->GetIdentifier());
   UUID requestId = this->SendRpcRequest("OnBeforeClose");
-  browserProcessHandler->WaitForResponse<Browser_Acknowledge>(requestId);
+  browserProcessHandler->WaitForResponse<Acknowledge>(requestId);
 }
 
 void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
