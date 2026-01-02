@@ -101,8 +101,6 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
   BrowserProcessHandler* browserProcessHandler;
   CefRefPtr<CefBrowser> browser;
   CefRect pageRectangle;
-  CefRect* popupRectangle;
-  bool popupVisible;
 
   IMPLEMENT_REFCOUNTING(BrowserHandler);
 };

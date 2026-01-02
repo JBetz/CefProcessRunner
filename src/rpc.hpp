@@ -486,6 +486,24 @@ inline void to_json(json& j, const Browser_OnBeforeContextMenu& m) {
   j["selectionText"] = m.selectionText;
 }
 
+struct Browser_OnPopupShow {
+  bool show;
+};
+
+inline void to_json(json& j, const Browser_OnPopupShow& m) {
+  j = json::object();
+  j["show"] = m.show;
+}
+
+struct Browser_OnPopupSize {
+  CefRect rectangle;
+};
+
+inline void to_json(json& j, const Browser_OnPopupSize& m) {
+  j = json::object();
+  j["rectangle"] = m.rectangle;
+}
+
 // Context menu
 struct ContextMenuCommand {
   int index;

@@ -11,9 +11,7 @@ using json = nlohmann::json;
 
 BrowserHandler::BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle)
     : browserProcessHandler(browserProcessHandler),
-      pageRectangle(pageRectangle),
-      popupRectangle(NULL),
-      popupVisible(false) {}
+      pageRectangle(pageRectangle) {}
 
 CefRefPtr<CefBrowser> BrowserHandler::GetBrowser() {
   return this->browser;
@@ -113,18 +111,16 @@ void BrowserHandler::OnAcceleratedPaint(
   } else {
     HANDLE applicationHandle = applicationProcessHandle.value();
     HANDLE duplicateHandle = NULL;
-    if (!DuplicateHandle(GetCurrentProcess(),
-                         sourceHandle,
-                         applicationHandle,
-                         &duplicateHandle,
-                         0,
-                         FALSE,
-                         DUPLICATE_SAME_ACCESS)) {
-      SDL_Log("Error duplicating shared texture: DuplicateHandle() call failed");
+    if (!DuplicateHandle(GetCurrentProcess(), sourceHandle, applicationHandle,
+                         &duplicateHandle, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
+      SDL_Log(
+          "Error duplicating shared texture: DuplicateHandle() call failed");
     } else {
-      arguments.sharedTextureHandle = reinterpret_cast<uintptr_t>(duplicateHandle);
+      arguments.sharedTextureHandle =
+          reinterpret_cast<uintptr_t>(duplicateHandle);
     }
   }
+
   json jsonArguments = arguments;
   std::optional<UUID> requestId = this->SendRpcRequest("OnAcceleratedPaint", jsonArguments);
   if (!requestId.has_value()) {
@@ -160,12 +156,18 @@ bool BrowserHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser_,
 }
 
 void BrowserHandler::OnPopupShow(CefRefPtr<CefBrowser> browser_, bool show) {
-  popupVisible = show;
+  Browser_OnPopupShow arguments;
+  arguments.show = show;
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnPopupShow", jsonArguments);
 }
 
 void BrowserHandler::OnPopupSize(CefRefPtr<CefBrowser> browser_,
                                  const CefRect& rect) {
-  *popupRectangle = rect;
+  Browser_OnPopupSize arguments;
+  arguments.rectangle = rect;
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnPopupSize", jsonArguments);
 }
 
 void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser_,
