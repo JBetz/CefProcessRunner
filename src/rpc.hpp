@@ -478,6 +478,16 @@ struct ContextMenuCommand {
   std::string label;
 };
 
+inline void from_json(const json& j, ContextMenuCommand& m) {
+  j.at("index").get_to(m.index);
+  j.at("commandId").get_to(m.commandId);
+  j.at("label").get_to(m.label);
+}
+
 struct ContextMenuConfiguration {
   std::vector<ContextMenuCommand> commands;
 };
+
+inline void from_json(const json& j, ContextMenuConfiguration& m) {
+  m.commands = j.at("commands").get<std::vector<ContextMenuCommand>>();
+}
