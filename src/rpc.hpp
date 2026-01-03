@@ -470,6 +470,7 @@ inline void from_json(const json& j, Browser_Close& m) {
 }
 
 struct Browser_OnBeforeContextMenu {
+  CefPoint origin;
   int nodeType;
   int nodeMedia;
   int nodeMediaStateFlags;
@@ -479,6 +480,7 @@ struct Browser_OnBeforeContextMenu {
 
 inline void to_json(json& j, const Browser_OnBeforeContextMenu& m) {
   j = json::object();
+  j["origin"] = m.origin;
   j["nodeType"] = m.nodeType;
   j["nodeMedia"] = m.nodeMedia;
   j["nodeMediaStateFlags"] = m.nodeMediaStateFlags;
@@ -502,25 +504,4 @@ struct Browser_OnPopupSize {
 inline void to_json(json& j, const Browser_OnPopupSize& m) {
   j = json::object();
   j["rectangle"] = m.rectangle;
-}
-
-// Context menu
-struct ContextMenuCommand {
-  int index;
-  int commandId;
-  std::string label;
-};
-
-inline void from_json(const json& j, ContextMenuCommand& m) {
-  j.at("index").get_to(m.index);
-  j.at("commandId").get_to(m.commandId);
-  j.at("label").get_to(m.label);
-}
-
-struct ContextMenuConfiguration {
-  std::vector<ContextMenuCommand> commands;
-};
-
-inline void from_json(const json& j, ContextMenuConfiguration& m) {
-  m.commands = j.at("commands").get<std::vector<ContextMenuCommand>>();
 }

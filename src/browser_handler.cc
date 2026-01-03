@@ -240,23 +240,14 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
                                          CefRefPtr<CefContextMenuParams> params,
                                          CefRefPtr<CefMenuModel> model) {
   Browser_OnBeforeContextMenu arguments;
+  arguments.origin = CefPoint(params->GetXCoord(), params->GetYCoord());
   arguments.nodeType = static_cast<int>(params->GetTypeFlags());
   arguments.nodeMedia = static_cast<int>(params->GetMediaType());
   arguments.nodeMediaStateFlags = static_cast<int>(params->GetMediaStateFlags());
   arguments.nodeEditFlags = static_cast<int>(params->GetEditStateFlags());
   arguments.selectionText = params->GetSelectionText().ToString();
   json jsonArguments = arguments;
-  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
-  if (!requestId.has_value()) {
-    return;
-  }
-  ContextMenuConfiguration config = browserProcessHandler->WaitForResponse<ContextMenuConfiguration>(
-          requestId.value());
-  std::vector<ContextMenuCommand> commands = config.commands;
-  for (size_t i = 0; i < commands.size(); i++) {
-    ContextMenuCommand command = commands[i];
-    model->InsertItemAt(command.index, command.commandId, command.label);
-  }
+  this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
 }
 
 bool BrowserHandler::RunContextMenu(CefRefPtr<CefBrowser> browser_,
@@ -264,16 +255,6 @@ bool BrowserHandler::RunContextMenu(CefRefPtr<CefBrowser> browser_,
                                     CefRefPtr<CefContextMenuParams> params,
                                     CefRefPtr<CefMenuModel> model,
                                     CefRefPtr<CefRunContextMenuCallback> callback) {
-  return false;
+  callback->Cancel();
+  return true;
 }
-
-bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser_,
-                                          CefRefPtr<CefFrame> frame,
-                                          CefRefPtr<CefContextMenuParams> params,
-                                          int command_id,
-                                          cef_event_flags_t event_flags) {
-  return false;
-}
-
-void BrowserHandler::OnContextMenuDismissed(CefRefPtr<CefBrowser> browser_,
-                                            CefRefPtr<CefFrame> frame) {}

@@ -585,5 +585,3 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
 
 template std::monostate 
     BrowserProcessHandler::WaitForResponse<std::monostate>(UUID);
-template ContextMenuConfiguration
-    BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);
