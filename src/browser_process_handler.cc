@@ -585,3 +585,5 @@ int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
 
 template std::monostate 
     BrowserProcessHandler::WaitForResponse<std::monostate>(UUID);
+template bool 
+    BrowserProcessHandler::WaitForResponse<bool>(UUID);

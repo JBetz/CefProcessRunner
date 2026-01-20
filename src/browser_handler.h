@@ -12,7 +12,7 @@
 
 class BrowserProcessHandler;
 
-class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefLifeSpanHandler, CefContextMenuHandler {
+class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefLifeSpanHandler, CefRequestHandler, CefContextMenuHandler {
  public:
   BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle);
 
@@ -27,6 +27,7 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
   CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
+  CefRefPtr<CefRequestHandler> GetRequestHandler() override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
@@ -76,8 +77,28 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
                       const CefCursorInfo& custom_cursor_info) override;
   
   // CefLifeSpanHandler:
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     int popup_id,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     CefLifeSpanHandler::WindowOpenDisposition target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) override;
   bool DoClose(CefRefPtr<CefBrowser> browser) override;
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
+
+  // CefRequestHandler:
+  bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefFrame> frame,
+                        const CefString& target_url,
+                        CefLifeSpanHandler::WindowOpenDisposition target_disposition,
+                        bool user_gesture) override;
 
   // CefContextMenuHandler:
   void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,

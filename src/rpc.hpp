@@ -505,3 +505,31 @@ inline void to_json(json& j, const Browser_OnPopupSize& m) {
   j = json::object();
   j["rectangle"] = m.rectangle;
 }
+
+struct Browser_OnBeforePopup {
+  std::string targetUrl;
+  std::string targetFrameName;
+  int targetDisposition;
+  bool userGesture;
+};
+
+inline void to_json(json& j, const Browser_OnBeforePopup& m) {
+  j = json::object();
+  j["targetUrl"] = m.targetUrl;
+  j["targetFrameName"] = m.targetFrameName;
+  j["targetDisposition"] = m.targetDisposition;
+  j["userGesture"] = m.userGesture;
+}
+
+struct Browser_OnOpenUrlFromTab {
+  std::string targetUrl;
+  int targetDisposition;
+  bool userGesture;
+};
+
+inline void to_json(json& j, const Browser_OnOpenUrlFromTab& m) {
+  j = json::object();
+  j["targetUrl"] = m.targetUrl;
+  j["targetDisposition"] = m.targetDisposition;
+  j["userGesture"] = m.userGesture;
+}

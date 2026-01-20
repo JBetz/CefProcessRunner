@@ -61,6 +61,10 @@ CefRefPtr<CefContextMenuHandler> BrowserHandler::GetContextMenuHandler() {
   return this;
 }
 
+CefRefPtr<CefRequestHandler> BrowserHandler::GetRequestHandler() {
+  return this;
+}
+
 bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,
@@ -233,6 +237,51 @@ void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
     return;
   }
   browserProcessHandler->WaitForResponse<std::monostate>(requestId.value());
+}
+
+bool BrowserHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser_,
+CefRefPtr<CefFrame> frame,
+int popup_id,
+const CefString& target_url,
+const CefString& target_frame_name,
+CefLifeSpanHandler::WindowOpenDisposition target_disposition,
+bool user_gesture,
+const CefPopupFeatures& popupFeatures,
+CefWindowInfo& windowInfo,
+CefRefPtr<CefClient>& client,
+CefBrowserSettings& settings,
+CefRefPtr<CefDictionaryValue>& extra_info,
+bool* no_javascript_access) {
+  Browser_OnBeforePopup arguments;
+  arguments.targetUrl = target_url.ToString();
+  arguments.targetFrameName = target_frame_name.ToString();
+  arguments.targetDisposition = static_cast<int>(target_disposition);
+  arguments.userGesture = user_gesture;
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforePopup", jsonArguments);
+  if (!requestId.has_value()) {
+    return true;
+  }
+  std::optional<bool> result = browserProcessHandler->WaitForResponse<bool>(requestId.value());
+  return result.value_or(true);
+}
+
+bool BrowserHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser_,
+                                    CefRefPtr<CefFrame> frame,
+                                    const CefString& target_url,
+                                    CefLifeSpanHandler::WindowOpenDisposition target_disposition,
+                                    bool user_gesture) {
+Browser_OnOpenUrlFromTab arguments;
+  arguments.targetUrl = target_url.ToString();
+  arguments.targetDisposition = static_cast<int>(target_disposition);
+  arguments.userGesture = user_gesture;
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId = this->SendRpcRequest("OnOpenUrlFromTab", jsonArguments);
+  if (!requestId.has_value()) {
+    return true;
+  }
+  std::optional<bool> result = browserProcessHandler->WaitForResponse<bool>(requestId.value());
+  return result.value_or(true);
 }
 
 void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
