@@ -312,7 +312,7 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
       return;
     }
 
-    if (request.methodName == "NotifyResize") {
+    if (request.methodName == "WasResized") {
       browserHandler->GetBrowser()->GetHost()->WasResized();
       return;
     }
