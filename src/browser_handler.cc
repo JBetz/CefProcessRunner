@@ -9,9 +9,9 @@
 
 using json = nlohmann::json;
 
-BrowserHandler::BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle)
+BrowserHandler::BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect initialPageRectangle)
     : browserProcessHandler(browserProcessHandler),
-      pageRectangle(pageRectangle) {}
+      initialPageRectangle(initialPageRectangle) {}
 
 CefRefPtr<CefBrowser> BrowserHandler::GetBrowser() {
   return this->browser;
@@ -19,10 +19,6 @@ CefRefPtr<CefBrowser> BrowserHandler::GetBrowser() {
 
 void BrowserHandler::SetBrowser(CefRefPtr<CefBrowser> browser_) {
   this->browser = browser_;
-}
-
-void BrowserHandler::SetPageRectangle(const CefRect& rect) {
-  this->pageRectangle = rect;
 }
 
 std::optional<UUID> BrowserHandler::SendRpcRequest(std::string methodName, json arguments) {
@@ -83,7 +79,15 @@ bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
 
 void BrowserHandler::GetViewRect(CefRefPtr<CefBrowser> browser_,
                                  CefRect& rect) {
-  rect = pageRectangle;
+  if (this->browser == nullptr) {
+    rect = initialPageRectangle;
+  } else {
+    std::optional<UUID> requestId = this->SendRpcRequest("GetViewRect");
+    CefRect currentPageRectangle =
+        browserProcessHandler->BrowserProcessHandler::WaitForResponse<CefRect>(
+            requestId.value());
+    rect = currentPageRectangle;
+  }
 }
 
 void BrowserHandler::OnPaint(CefRefPtr<CefBrowser> browser_,

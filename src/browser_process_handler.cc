@@ -313,9 +313,7 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
     }
 
     if (request.methodName == "NotifyResize") {
-      Browser_NotifyResize arguments =
-          request.arguments.get<Browser_NotifyResize>();
-      browserHandler->SetPageRectangle(arguments.rectangle);
+      browserHandler->GetBrowser()->GetHost()->WasResized();
       return;
     }
 
@@ -587,3 +585,5 @@ template std::monostate
     BrowserProcessHandler::WaitForResponse<std::monostate>(UUID);
 template bool 
     BrowserProcessHandler::WaitForResponse<bool>(UUID);
+template CefRect
+    BrowserProcessHandler::WaitForResponse<CefRect>(UUID);

@@ -18,7 +18,6 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
 
   CefRefPtr<CefBrowser> GetBrowser();
   void SetBrowser(CefRefPtr<CefBrowser> browser);
-  void SetPageRectangle(const CefRect& rect);
   std::optional<UUID> SendRpcRequest(std::string methodName, json arguments);
   std::optional<UUID> SendRpcRequest(std::string methodName);
 
@@ -114,7 +113,7 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
  private:
   BrowserProcessHandler* browserProcessHandler;
   CefRefPtr<CefBrowser> browser;
-  CefRect pageRectangle;
+  CefRect initialPageRectangle;
 
   IMPLEMENT_REFCOUNTING(BrowserHandler);
 };

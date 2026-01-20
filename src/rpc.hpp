@@ -360,14 +360,6 @@ inline void from_json(const json& j, Browser_LoadUrl& m) {
   j.at("url").get_to(m.url);
 }
 
-struct Browser_NotifyResize {
-  CefRect rectangle;
-};
-
-inline void from_json(const json& j, Browser_NotifyResize& m) {
-  j.at("rectangle").get_to(m.rectangle);
-}
-
 struct Browser_OnAcceleratedPaint {
   int elementType;
   uintptr_t sharedTextureHandle;
