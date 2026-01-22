@@ -108,27 +108,26 @@ void BrowserHandler::OnAcceleratedPaint(
     PaintElementType type,
     const RectList& dirtyRects,
     const CefAcceleratedPaintInfo& info) {
-  Browser_OnAcceleratedPaint arguments;
-  arguments.elementType = type;
-  arguments.format = info.format;
   HANDLE sourceHandle = info.shared_texture_handle;
   std::optional<HANDLE> applicationProcessHandle =
       browserProcessHandler->GetClientProcessHandle();
   if (!applicationProcessHandle.has_value()) {
     SDL_Log("Error duplicating shared texture: Application process handle not initialized");
-  } else {
-    HANDLE applicationHandle = applicationProcessHandle.value();
-    HANDLE duplicateHandle = NULL;
-    if (!DuplicateHandle(GetCurrentProcess(), sourceHandle, applicationHandle,
-                         &duplicateHandle, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
-      SDL_Log(
-          "Error duplicating shared texture: DuplicateHandle() call failed");
-    } else {
-      arguments.sharedTextureHandle =
-          reinterpret_cast<uintptr_t>(duplicateHandle);
-    }
+    return;
+  } 
+  HANDLE applicationHandle = applicationProcessHandle.value();
+  HANDLE duplicateHandle = NULL;
+  if (!DuplicateHandle(GetCurrentProcess(), sourceHandle, applicationHandle,
+                       &duplicateHandle, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
+    SDL_Log(
+        "Error duplicating shared texture: DuplicateHandle() call failed");
+    return;
   }
-
+  Browser_OnAcceleratedPaint arguments;
+  arguments.elementType = type;
+  arguments.format = info.format;
+  arguments.sharedTextureHandle =
+        reinterpret_cast<uintptr_t>(duplicateHandle);
   json jsonArguments = arguments;
   std::optional<UUID> requestId = this->SendRpcRequest("OnAcceleratedPaint", jsonArguments);
   if (!requestId.has_value()) {
