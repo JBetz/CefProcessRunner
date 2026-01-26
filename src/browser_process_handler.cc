@@ -27,14 +27,15 @@ using json = nlohmann::json;
 
 const char kEvalMessage[] = "Eval";
 
-BrowserProcessHandler::BrowserProcessHandler()
-    : clientProcessHandle(std::nullopt),
-      incomingMessageQueue(),
-      outgoingMessageQueue(),
-      responseMapMutex(SDL_CreateMutex()),
-      socketServer(NULL),
-      browserHandlers(),
-      isShuttingDown(false) {}
+BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle)
+: applicationProcessHandle(applicationProcessHandle),
+  applicationMessageWindowHandle(applicationMessageWindowHandle),
+  incomingMessageQueue(),
+  outgoingMessageQueue(),
+  responseMapMutex(SDL_CreateMutex()),
+  socketServer(NULL),
+  browserHandlers(),
+  isShuttingDown(false) {}
 
 BrowserProcessHandler::~BrowserProcessHandler() {
   SDL_DestroyMutex(responseMapMutex);
@@ -78,25 +79,12 @@ CefRefPtr<CefBrowserProcessHandler> BrowserProcessHandler::GetBrowserProcessHand
   return this;
 }
 
-std::optional<HANDLE> BrowserProcessHandler::GetClientProcessHandle() {
-  return this->clientProcessHandle;
+HANDLE BrowserProcessHandler::GetApplicationProcessHandle() {
+  return this->applicationProcessHandle;
 }
 
-std::optional<HWND> BrowserProcessHandler::GetClientMessageWindowHandle() {
-  return this->clientMessageWindowHandle;
-}
-
-void BrowserProcessHandler::OpenClientProcessHandle(int processId) {
-  HANDLE handle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, processId);
-  if (handle == NULL) {
-    SDL_Log("OpenProcess(%u) failed: %lu", (unsigned)processId, GetLastError());
-  } else {
-    this->clientProcessHandle = std::make_optional(handle);
-  }
-}
-
-void BrowserProcessHandler::SetClientMessageWindowHandle(HWND windowHandle) {
-  this->clientMessageWindowHandle = std::make_optional(windowHandle);
+HWND BrowserProcessHandler::GetApplicationMessageWindowHandle() {
+  return this->applicationMessageWindowHandle;
 }
 
 void BrowserProcessHandler::OnContextInitialized() {
@@ -208,16 +196,8 @@ void BrowserProcessHandler::SendMessage(std::string payload) {
 }
 
 void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
-  if (request.className == "Client") {
-    if (request.methodName == "Initialize") {
-      Client_Initialize arguments = request.arguments.get<Client_Initialize>();
-      this->OpenClientProcessHandle(arguments.clientProcessId);
-      this->SetClientMessageWindowHandle(
-          reinterpret_cast<HWND>(arguments.clientMessageWindowHandle));
-      return;
-    }
-
-    if (request.methodName == "CreateBrowser") {
+if (request.className == "Client") {
+  if (request.methodName == "CreateBrowser") {
       Client_CreateBrowser arguments =
           request.arguments.get<Client_CreateBrowser>();
       CefPostTask(TID_UI, base::BindOnce(
@@ -535,12 +515,10 @@ int BrowserProcessHandler::RpcServerThread(void* browserProcessHandlerPtr) {
           streamSocket = nullptr;
           break;
         }
-        std::optional<HWND> clientMessageWindowHandle = browserProcessHandler
+        HWND clientMessageWindowHandle = browserProcessHandler
             ->GetClientMessageWindowHandle();
-        if (clientMessageWindowHandle.has_value()) {
-          NET_WaitUntilStreamSocketDrained(streamSocket, -1);
-          PostMessageW(clientMessageWindowHandle.value(), WM_USER, 0, 0);
-        }
+        NET_WaitUntilStreamSocketDrained(streamSocket, -1);
+        PostMessageW(clientMessageWindowHandle, WM_USER, 0, 0);
     }
     SDL_Delay(1);  // tiny yield
   }

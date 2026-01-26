@@ -10,19 +10,17 @@
 class BrowserHandler;
 
 class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHandler {
- public:
-  BrowserProcessHandler();
-  ~BrowserProcessHandler();
+public:
+ BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle);
+ ~BrowserProcessHandler();
 
-  // Accessors.
-  NET_Server* GetSocketServer();
-  CefRefPtr<CefBrowser> GetBrowser(int browserId);
-  CefRefPtr<BrowserHandler> GetBrowserHandler(int browserId);
-  void RemoveBrowserHandler(int browserId);
-  void OpenClientProcessHandle(int processId);
-  void SetClientMessageWindowHandle(HWND messageWindowHandle);
-  std::optional<HANDLE> GetClientProcessHandle();
-  std::optional<HWND> GetClientMessageWindowHandle();
+ // Accessors.
+ NET_Server* GetSocketServer();
+ CefRefPtr<CefBrowser> GetBrowser(int browserId);
+ CefRefPtr<BrowserHandler> GetBrowserHandler(int browserId);
+ void RemoveBrowserHandler(int browserId);
+ HANDLE GetApplicationProcessHandle();
+ HWND GetApplicationMessageWindowHandle();
 
   // CefBrowserProcessHandler methods.
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
@@ -47,8 +45,8 @@ class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHan
   static int RpcWorkerThread(void* browserProcessHandlerPtr);
 
  private:
-  std::optional<HANDLE> clientProcessHandle;
-  std::optional<HWND> clientMessageWindowHandle;
+  HANDLE applicationProcessHandle;
+  HWND applicationMessageWindowHandle;
   ThreadSafeQueue<std::string> incomingMessageQueue;
   ThreadSafeQueue<std::string> outgoingMessageQueue;
   SDL_Mutex* responseMapMutex = nullptr;

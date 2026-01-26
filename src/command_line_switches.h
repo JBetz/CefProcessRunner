@@ -49,5 +49,6 @@ extern const char kUseBottomControls[];
 extern const char kHidePipFrame[];
 extern const char kHideChromeBubbles[];
 extern const char kApplicationProcessId[];
+extern const char kApplicationMessageWindowHandle[];
 
 }  // namespace switches

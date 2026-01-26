@@ -86,7 +86,32 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
                          .c_str());
 
   if (process_type == ProcessHandler::BrowserProcess) {
-    handler = new BrowserProcessHandler();
+    const std::string& application_process_id_str =
+        command_line->GetSwitchValue(switches::kApplicationProcessId);
+    const std::string& application_message_window_handle_str =
+        command_line->GetSwitchValue(switches::kApplicationMessageWindowHandle);
+    
+    if (application_process_id_str.empty()) {
+      OutputDebugStringA("ERROR: --application-process-id is required\n");
+      return 1;
+    }
+    if (application_message_window_handle_str.empty()) {
+      OutputDebugStringA("ERROR: --application-message-window-handle is required\n");
+      return 1;
+    }
+    
+    int clientProcessId = std::stoi(application_process_id_str);
+    HANDLE clientProcessHandle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, clientProcessId);
+    if (clientProcessHandle == NULL) {
+      OutputDebugStringA((std::string("ERROR: OpenProcess failed for process id ") + 
+                          application_process_id_str + "\n").c_str());
+      return 1;
+    }
+    
+    HWND clientMessageWindowHandle = reinterpret_cast<HWND>(
+        std::stoull(application_message_window_handle_str));
+    
+    handler = new BrowserProcessHandler(clientProcessHandle, clientMessageWindowHandle);
   } else if (process_type == ProcessHandler::RendererProcess) {
     handler = new RenderProcessHandler();
   } else if (process_type == ProcessHandler::OtherProcess) {
