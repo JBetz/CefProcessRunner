@@ -11,7 +11,7 @@ class BrowserHandler;
 
 class BrowserProcessHandler : public ProcessHandler, public CefBrowserProcessHandler {
 public:
- BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle);
+ BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle, int windowMessageId);
  ~BrowserProcessHandler();
 
  // Accessors.
@@ -21,6 +21,7 @@ public:
  void RemoveBrowserHandler(int browserId);
  HANDLE GetApplicationProcessHandle();
  HWND GetApplicationMessageWindowHandle();
+ int GetWindowMessageId();
 
   // CefBrowserProcessHandler methods.
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override;
@@ -47,6 +48,7 @@ public:
  private:
   HANDLE applicationProcessHandle;
   HWND applicationMessageWindowHandle;
+  int windowMessageId;
   ThreadSafeQueue<std::string> incomingMessageQueue;
   ThreadSafeQueue<std::string> outgoingMessageQueue;
   SDL_Mutex* responseMapMutex = nullptr;

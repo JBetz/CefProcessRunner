@@ -90,6 +90,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         command_line->GetSwitchValue(switches::kApplicationProcessId);
     const std::string& application_message_window_handle_str =
         command_line->GetSwitchValue(switches::kApplicationMessageWindowHandle);
+    const std::string& window_message_id_str =
+        command_line->GetSwitchValue(switches::kWindowMessageId);
     
     if (application_process_id_str.empty()) {
       OutputDebugStringA("ERROR: --application-process-id is required\n");
@@ -99,19 +101,25 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
       OutputDebugStringA("ERROR: --application-message-window-handle is required\n");
       return 1;
     }
+    if (window_message_id_str.empty()) {
+      OutputDebugStringA("ERROR: --window-message-id is required\n");
+      return 1;
+    }
     
-    int clientProcessId = std::stoi(application_process_id_str);
-    HANDLE clientProcessHandle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, clientProcessId);
-    if (clientProcessHandle == NULL) {
+    int applicationProcessId = std::stoi(application_process_id_str);
+    HANDLE applicationProcessHandle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, applicationProcessId);
+    if (applicationProcessHandle == NULL) {
       OutputDebugStringA((std::string("ERROR: OpenProcess failed for process id ") + 
                           application_process_id_str + "\n").c_str());
       return 1;
     }
     
-    HWND clientMessageWindowHandle = reinterpret_cast<HWND>(
+    HWND applicationMessageWindowHandle = reinterpret_cast<HWND>(
         std::stoull(application_message_window_handle_str));
+
+    int windowMessageId = std::stoi(window_message_id_str);
     
-    handler = new BrowserProcessHandler(clientProcessHandle, clientMessageWindowHandle);
+    handler = new BrowserProcessHandler(applicationProcessHandle, applicationMessageWindowHandle, windowMessageId);
   } else if (process_type == ProcessHandler::RendererProcess) {
     handler = new RenderProcessHandler();
   } else if (process_type == ProcessHandler::OtherProcess) {

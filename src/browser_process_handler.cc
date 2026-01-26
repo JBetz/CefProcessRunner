@@ -27,9 +27,10 @@ using json = nlohmann::json;
 
 const char kEvalMessage[] = "Eval";
 
-BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle)
+BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle, int windowMessageId)
 : applicationProcessHandle(applicationProcessHandle),
   applicationMessageWindowHandle(applicationMessageWindowHandle),
+  windowMessageId(windowMessageId),
   incomingMessageQueue(),
   outgoingMessageQueue(),
   responseMapMutex(SDL_CreateMutex()),
@@ -87,6 +88,10 @@ HWND BrowserProcessHandler::GetApplicationMessageWindowHandle() {
   return this->applicationMessageWindowHandle;
 }
 
+int BrowserProcessHandler::GetWindowMessageId() {
+  return this->windowMessageId;
+}
+
 void BrowserProcessHandler::OnContextInitialized() {
   this->CefBrowserProcessHandler::OnContextInitialized();
 
@@ -119,6 +124,8 @@ void BrowserProcessHandler::OnContextInitialized() {
     SDL_Log("Failed creating RPC worker thread: %s", SDL_GetError());
     abort();
   }
+
+  PostMessageW(applicationMessageWindowHandle, windowMessageId, 0, 0);
 }
 
 void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle) {
@@ -515,10 +522,11 @@ int BrowserProcessHandler::RpcServerThread(void* browserProcessHandlerPtr) {
           streamSocket = nullptr;
           break;
         }
-        HWND clientMessageWindowHandle = browserProcessHandler
-            ->GetClientMessageWindowHandle();
+        HWND applicationMessageWindowHandle = browserProcessHandler
+            ->GetApplicationMessageWindowHandle();
+        int windowMessageId = browserProcessHandler->GetWindowMessageId();
         NET_WaitUntilStreamSocketDrained(streamSocket, -1);
-        PostMessageW(clientMessageWindowHandle, WM_USER, 0, 0);
+        PostMessageW(applicationMessageWindowHandle, windowMessageId, 0, 0);
     }
     SDL_Delay(1);  // tiny yield
   }

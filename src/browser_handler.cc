@@ -110,7 +110,7 @@ void BrowserHandler::OnAcceleratedPaint(
     const CefAcceleratedPaintInfo& info) {
   HANDLE sourceHandle = info.shared_texture_handle;
   std::optional<HANDLE> applicationProcessHandle =
-      browserProcessHandler->GetClientProcessHandle();
+      browserProcessHandler->GetApplicationProcessHandle();
   if (!applicationProcessHandle.has_value()) {
     SDL_Log("Error duplicating shared texture: Application process handle not initialized");
     return;
