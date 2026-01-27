@@ -125,11 +125,16 @@ void BrowserProcessHandler::OnContextInitialized() {
     abort();
   }
 
-  HANDLE hEvent = OpenEvent(EVENT_MODIFY_STATE, FALSE, L"Global\\ChromiumSocketReady");
-  if (!SetEvent(hEvent)) {
-    SDL_Log("Error signaling ChromiumSocketReady event");
+  HANDLE hEvent = OpenEvent(EVENT_MODIFY_STATE, FALSE, L"ChromiumSocketReady");
+  if (hEvent == NULL) {
+    SDL_Log("Error opening ChromiumSocketReady event: %lu", GetLastError());
     abort();
   }
+  if (!SetEvent(hEvent)) {
+    SDL_Log("Error signaling ChromiumSocketReady event: %lu", GetLastError());
+    abort();
+  }
+  CloseHandle(hEvent);
 }
 
 void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle) {
