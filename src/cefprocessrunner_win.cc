@@ -81,7 +81,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   CefRefPtr<CefApp> handler;
   ProcessHandler::ProcessType process_type = ProcessHandler::GetProcessType(command_line);
 
-  OutputDebugStringA((std::string("Running process type: ") +
+  SDL_Log((std::string("Running process type: ") +
                       ProcessHandler::ProcessTypeToString(process_type) + "\n")
                          .c_str());
 
@@ -94,23 +94,22 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         command_line->GetSwitchValue(switches::kWindowMessageId);
     
     if (application_process_id_str.empty()) {
-      OutputDebugStringA("ERROR: --application-process-id is required\n");
+      SDL_Log("ERROR: --application-process-id is required");
       return 1;
     }
     if (application_message_window_handle_str.empty()) {
-      OutputDebugStringA("ERROR: --application-message-window-handle is required\n");
+      SDL_Log("ERROR: --application-message-window-handle is required");
       return 1;
     }
     if (window_message_id_str.empty()) {
-      OutputDebugStringA("ERROR: --window-message-id is required\n");
+      SDL_Log("ERROR: --window-message-id is required");
       return 1;
     }
     
     int applicationProcessId = std::stoi(application_process_id_str);
     HANDLE applicationProcessHandle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, applicationProcessId);
     if (applicationProcessHandle == NULL) {
-      OutputDebugStringA((std::string("ERROR: OpenProcess failed for process id ") + 
-                          application_process_id_str + "\n").c_str());
+      SDL_Log("ERROR: OpenProcess failed for process id %s", application_process_id_str.c_str());
       return 1;
     }
     
