@@ -70,6 +70,8 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
                        int line) override;
   void OnLoadingProgressChange(CefRefPtr<CefBrowser> browser,
                                double progress) override;
+  void OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
+                          const std::vector<CefString>& icon_urls) override;
   bool OnCursorChange(CefRefPtr<CefBrowser> browser,
                           CefCursorHandle cursor,
                           cef_cursor_type_t type,

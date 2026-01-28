@@ -440,6 +440,15 @@ inline void to_json(json& j, const Browser_OnLoadingProgressChange& m) {
   j["progress"] = m.progress;
 }
 
+struct Browser_OnFaviconURLChange {
+  std::vector<std::string> iconUrls;
+};
+
+inline void to_json(json& j, const Browser_OnFaviconURLChange& m) {
+  j = json::object();
+  j["iconUrls"] = m.iconUrls;
+}
+
 struct Browser_OnFocusedNodeChanged {
   std::string tagName;
   std::optional<std::string> inputType;

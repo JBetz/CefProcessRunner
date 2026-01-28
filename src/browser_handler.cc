@@ -211,6 +211,16 @@ void BrowserHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser_,
   this->SendRpcRequest("OnLoadingProgressChange", jsonArguments);
 }
 
+void BrowserHandler::OnFaviconURLChange(CefRefPtr<CefBrowser> browser_,
+                                        const std::vector<CefString>& icon_urls) {
+  Browser_OnFaviconURLChange arguments;
+  for (const auto& url : icon_urls) {
+    arguments.iconUrls.push_back(url.ToString());
+  }
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnFaviconURLChange", jsonArguments);
+}
+
 bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
                                     CefCursorHandle cursor,
                                     cef_cursor_type_t type,
