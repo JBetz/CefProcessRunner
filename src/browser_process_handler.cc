@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <stdio.h>
 #include <thread>
 #include <mutex>
@@ -26,6 +26,53 @@
 using json = nlohmann::json;
 
 const char kEvalMessage[] = "Eval";
+
+// Callback for CefBrowserHost::DownloadImage
+class DownloadImageCallback : public CefDownloadImageCallback {
+public:
+  DownloadImageCallback(BrowserProcessHandler* handler, const UUID& requestId, const std::string& imageUrl)
+      : handler(handler), requestId(requestId), imageUrl(imageUrl) {}
+
+  void OnDownloadImageFinished(const CefString& image_url,
+                               int http_status_code,
+                               CefRefPtr<CefImage> image_) override {
+    Browser_OnDownloadImageComplete arguments;
+    arguments.imageUrl = imageUrl;
+    arguments.httpStatusCode = http_status_code;
+
+    if (image_ && !image_->IsEmpty()) {
+      float scale_factor = 1.0f;
+      int pixel_width = 0;
+      int pixel_height = 0;
+      
+      CefRefPtr<CefBinaryValue> binary = image_->GetAsPNG(scale_factor, true, pixel_width, pixel_height);
+      if (binary && binary->GetSize() > 0) {
+        std::vector<uint8_t> data(binary->GetSize());
+        binary->GetData(data.data(), data.size(), 0);
+        PNGImageData image;
+        image.data = data;
+        image.width = pixel_width;
+        image.height = pixel_height;
+        arguments.images.push_back(image);
+      }
+    }
+
+    RpcResponse response;
+    response.requestId = requestId;
+    response.success = true;
+    response.returnValue = arguments;
+    json jsonResponse = response;
+    
+    handler->SendMessage(jsonResponse.dump());
+  }
+
+private:
+  BrowserProcessHandler* handler;
+  UUID requestId;
+  std::string imageUrl;
+
+  IMPLEMENT_REFCOUNTING(DownloadImageCallback);
+};
 
 BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle, int windowMessageId)
 : applicationProcessHandle(applicationProcessHandle),
@@ -174,7 +221,7 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId, const
     response.success = true;
     response.returnValue = browserId;
     json j = response;
-    outgoingMessageQueue.push(j.dump());
+    this->SendMessage(j.dump());
   } else {
     SDL_Log("CreateBrowserSync returned null");
   }
@@ -204,7 +251,7 @@ void BrowserProcessHandler::Browser_TryCloseRpc(const CefRefPtr<CefBrowser> brow
   response.requestId = requestId;
   response.returnValue = canClose;
   json jsonResponse = response;
-  outgoingMessageQueue.push(jsonResponse.dump());
+  this->SendMessage(jsonResponse.dump());
 }
 
 void BrowserProcessHandler::SendMessage(std::string payload) {
@@ -392,6 +439,19 @@ if (request.className == "Client") {
     if (request.methodName == "TryClose") {
       CefPostTask(TID_UI,
                   base::BindOnce(&BrowserProcessHandler::Browser_TryCloseRpc, this, browser, request.id));
+      return;
+    }
+
+    if (request.methodName == "DownloadImage") {
+      Browser_DownloadImage arguments = request.arguments.get<Browser_DownloadImage>();
+      CefRefPtr<DownloadImageCallback> callback = 
+          new DownloadImageCallback(this, request.id, arguments.imageUrl);
+      browser->GetHost()->DownloadImage(
+          arguments.imageUrl,
+          arguments.isFavicon,
+          static_cast<uint32_t>(arguments.maxImageSize),
+          arguments.bypassCache,
+          callback);
       return;
     }
   }

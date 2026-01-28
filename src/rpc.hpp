@@ -440,11 +440,11 @@ inline void to_json(json& j, const Browser_OnLoadingProgressChange& m) {
   j["progress"] = m.progress;
 }
 
-struct Browser_OnFaviconURLChange {
+struct Browser_OnFaviconUrlChange {
   std::vector<std::string> iconUrls;
 };
 
-inline void to_json(json& j, const Browser_OnFaviconURLChange& m) {
+inline void to_json(json& j, const Browser_OnFaviconUrlChange& m) {
   j = json::object();
   j["iconUrls"] = m.iconUrls;
 }
@@ -533,4 +533,44 @@ inline void to_json(json& j, const Browser_OnOpenUrlFromTab& m) {
   j["targetUrl"] = m.targetUrl;
   j["targetDisposition"] = m.targetDisposition;
   j["userGesture"] = m.userGesture;
+}
+
+struct Browser_DownloadImage {
+  std::string imageUrl;
+  bool isFavicon;
+  int maxImageSize;
+  bool bypassCache;
+};
+
+inline void from_json(const json& j, Browser_DownloadImage& m) {
+  j.at("imageUrl").get_to(m.imageUrl);
+  j.at("isFavicon").get_to(m.isFavicon);
+  j.at("maxImageSize").get_to(m.maxImageSize);
+  j.at("bypassCache").get_to(m.bypassCache);
+}
+
+struct PNGImageData {
+  std::vector<uint8_t> data;
+  int width;
+  int height;
+};
+
+inline void to_json(json& j, const PNGImageData& m) {
+  j = json::object();
+  j["data"] = m.data;
+  j["width"] = m.width;
+  j["height"] = m.height;
+}
+
+struct Browser_OnDownloadImageComplete {
+  std::string imageUrl;
+  int httpStatusCode;
+  std::vector<PNGImageData> images;
+};
+
+inline void to_json(json& j, const Browser_OnDownloadImageComplete& m) {
+  j = json::object();
+  j["imageUrl"] = m.imageUrl;
+  j["httpStatusCode"] = m.httpStatusCode;
+  j["images"] = m.images;
 }
