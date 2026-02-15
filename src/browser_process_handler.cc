@@ -36,7 +36,7 @@ public:
   void OnDownloadImageFinished(const CefString& image_url,
                                int http_status_code,
                                CefRefPtr<CefImage> image_) override {
-    Browser_OnDownloadImageComplete arguments;
+    Browser_DownloadImageResponse arguments;
     arguments.imageUrl = imageUrl;
     arguments.httpStatusCode = http_status_code;
 

@@ -562,13 +562,13 @@ inline void to_json(json& j, const PNGImageData& m) {
   j["height"] = m.height;
 }
 
-struct Browser_OnDownloadImageComplete {
+struct Browser_DownloadImageResponse {
   std::string imageUrl;
   int httpStatusCode;
   std::vector<PNGImageData> images;
 };
 
-inline void to_json(json& j, const Browser_OnDownloadImageComplete& m) {
+inline void to_json(json& j, const Browser_DownloadImageResponse& m) {
   j = json::object();
   j["imageUrl"] = m.imageUrl;
   j["httpStatusCode"] = m.httpStatusCode;
