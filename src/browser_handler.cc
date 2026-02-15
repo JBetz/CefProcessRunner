@@ -61,6 +61,10 @@ CefRefPtr<CefRequestHandler> BrowserHandler::GetRequestHandler() {
   return this;
 }
 
+CefRefPtr<CefLoadHandler> BrowserHandler::GetLoadHandler() {
+  return this;
+}
+
 bool BrowserHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser_,
                                  CefRefPtr<CefFrame> frame,
                                  CefProcessId source_process,
@@ -313,4 +317,57 @@ bool BrowserHandler::RunContextMenu(CefRefPtr<CefBrowser> browser_,
                                     CefRefPtr<CefRunContextMenuCallback> callback) {
   callback->Cancel();
   return true;
+}
+
+void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser_,
+                                          bool isLoading,
+                                          bool canGoBack,
+                                          bool canGoForward) {
+  Browser_OnLoadingStateChange arguments;
+  arguments.isLoading = isLoading;
+  arguments.canGoBack = canGoBack;
+  arguments.canGoForward = canGoForward;
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnLoadingStateChange", jsonArguments);
+}
+
+void BrowserHandler::OnLoadStart(CefRefPtr<CefBrowser> browser_,
+                                 CefRefPtr<CefFrame> frame,
+                                 TransitionType transition_type) {
+  if (!frame->IsMain()) {
+    return;
+  }
+  Browser_OnLoadStart arguments;
+  arguments.transitionType = static_cast<int>(transition_type);
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId =
+      this->SendRpcRequest("OnLoadStart", jsonArguments);
+}
+
+void BrowserHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser_,
+                               CefRefPtr<CefFrame> frame,
+                               int httpStatusCode) {
+  if (!frame->IsMain()) {
+    return;
+  }
+  Browser_OnLoadEnd arguments;
+  arguments.httpStatusCode = httpStatusCode;
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnLoadEnd", jsonArguments);
+}
+
+void BrowserHandler::OnLoadError(CefRefPtr<CefBrowser> browser_,
+                                 CefRefPtr<CefFrame> frame,
+                                 ErrorCode errorCode,
+                                 const CefString& errorText,
+                                 const CefString& failedUrl) {
+  if (!frame->IsMain()) {
+    return;
+  }
+  Browser_OnLoadError arguments;
+  arguments.errorCode = static_cast<int>(errorCode);
+  arguments.errorText = errorText.ToString();
+  arguments.failedUrl = failedUrl.ToString();
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnLoadError", jsonArguments);
 }

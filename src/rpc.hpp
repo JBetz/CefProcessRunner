@@ -574,3 +574,47 @@ inline void to_json(json& j, const Browser_OnDownloadImageComplete& m) {
   j["httpStatusCode"] = m.httpStatusCode;
   j["images"] = m.images;
 }
+
+struct Browser_OnLoadingStateChange {
+  bool isLoading;
+  bool canGoBack;
+  bool canGoForward;
+};
+
+inline void to_json(json& j, const Browser_OnLoadingStateChange& m) {
+  j = json::object();
+  j["isLoading"] = m.isLoading;
+  j["canGoBack"] = m.canGoBack;
+  j["canGoForward"] = m.canGoForward;
+}
+
+struct Browser_OnLoadStart {
+  int transitionType;
+};
+
+inline void to_json(json& j, const Browser_OnLoadStart& m) {
+  j = json::object();
+  j["transitionType"] = m.transitionType;
+}
+
+struct Browser_OnLoadEnd {
+  int httpStatusCode;
+};
+
+inline void to_json(json& j, const Browser_OnLoadEnd& m) {
+  j = json::object();
+  j["httpStatusCode"] = m.httpStatusCode;
+}
+
+struct Browser_OnLoadError {
+  int errorCode;
+  std::string errorText;
+  std::string failedUrl;
+};
+
+inline void to_json(json& j, const Browser_OnLoadError& m) {
+  j = json::object();
+  j["errorCode"] = m.errorCode;
+  j["errorText"] = m.errorText;
+  j["failedUrl"] = m.failedUrl;
+}

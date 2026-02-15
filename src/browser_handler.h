@@ -12,7 +12,7 @@
 
 class BrowserProcessHandler;
 
-class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefLifeSpanHandler, CefRequestHandler, CefContextMenuHandler {
+class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, CefLifeSpanHandler, CefRequestHandler, CefContextMenuHandler, CefLoadHandler {
  public:
   BrowserHandler(BrowserProcessHandler* browserProcessHandler, CefRect pageRectangle);
 
@@ -27,6 +27,7 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
   CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
   CefRefPtr<CefRequestHandler> GetRequestHandler() override;
+  CefRefPtr<CefLoadHandler> GetLoadHandler() override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 CefProcessId source_process,
@@ -111,6 +112,27 @@ class BrowserHandler : public CefClient, CefRenderHandler, CefDisplayHandler, Ce
                         CefRefPtr<CefContextMenuParams> params,
                         CefRefPtr<CefMenuModel> model,
                         CefRefPtr<CefRunContextMenuCallback> callback) override;
+
+  // CefLoadHandler:
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                            bool isLoading,
+                            bool canGoBack,
+                            bool canGoForward) override;
+
+  void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   TransitionType transition_type) override;
+
+  void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+      CefRefPtr<CefFrame> frame,
+                 int httpStatusCode) override;
+
+  void OnLoadError(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   ErrorCode errorCode,
+                   const CefString& errorText,
+                   const CefString& failedUrl) override;
+
 
  private:
   BrowserProcessHandler* browserProcessHandler;
