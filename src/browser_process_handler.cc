@@ -74,6 +74,28 @@ private:
   IMPLEMENT_REFCOUNTING(DownloadImageCallback);
 };
 
+// Callback for CefFrame::GetSource
+class GetSourceStringVisitor : public CefStringVisitor {
+public:
+  GetSourceStringVisitor(BrowserProcessHandler* handler, const UUID& requestId)
+      : handler(handler), requestId(requestId) {}
+
+  void Visit(const CefString& string) override {
+    RpcResponse response;
+    response.requestId = requestId;
+    response.success = true;
+    response.returnValue = string.ToString();
+    json jsonResponse = response;
+    handler->SendMessage(jsonResponse.dump());
+  }
+
+private:
+  BrowserProcessHandler* handler;
+  UUID requestId;
+
+  IMPLEMENT_REFCOUNTING(GetSourceStringVisitor);
+};
+
 BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle, int windowMessageId)
 : applicationProcessHandle(applicationProcessHandle),
   applicationMessageWindowHandle(applicationMessageWindowHandle),
@@ -452,6 +474,14 @@ if (request.className == "Client") {
           static_cast<uint32_t>(arguments.maxImageSize),
           arguments.bypassCache,
           callback);
+      return;
+    }
+
+    if (request.methodName == "GetSource") {
+      CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+      CefRefPtr<GetSourceStringVisitor> visitor =
+          new GetSourceStringVisitor(this, request.id);
+      frame->GetSource(visitor);
       return;
     }
   }
