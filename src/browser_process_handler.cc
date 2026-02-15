@@ -280,6 +280,15 @@ void BrowserProcessHandler::SendMessage(std::string payload) {
   outgoingMessageQueue.push(payload);
 }
 
+void BrowserProcessHandler::SendErrorMessage(const UUID& requestId, std::string message) {
+  RpcResponse response;
+  response.requestId = requestId;
+  response.success = false;
+  response.returnValue = message;
+  json jsonResponse = response;
+  this->SendMessage(jsonResponse.dump());
+}
+
 void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
 if (request.className == "Client") {
   if (request.methodName == "CreateBrowser") {
@@ -301,15 +310,15 @@ if (request.className == "Client") {
 
   if (request.className == "Browser") {
     CefRefPtr<BrowserHandler> browserHandler = this->GetBrowserHandler(request.instanceId);
+    if (!browserHandler) {
+      std::string message = "Browser handler for browser instance " + std::to_string(request.instanceId) + " not found.";
+      this->SendErrorMessage(request.id, message);
+      return;
+    }
     CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
-    if (!browserHandler || !browser) {
-      RpcResponse response;
-      response.requestId = request.id;
-      response.success = false;
-      response.error =
-          printf("Browser instance %d not found.", request.instanceId);
-      json jsonResponse = response;
-      this->SendMessage(jsonResponse.dump());
+    if (!browser) {
+      std::string message = "Browser instance " + std::to_string(request.instanceId) + " not found.";
+      this->SendErrorMessage(request.id, message);
       return;
     }
 
