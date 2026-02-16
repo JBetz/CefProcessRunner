@@ -6,13 +6,13 @@
 
 #include "render_process_handler.h"
 
+#include <SDL3/sdl.h>
+#include <rpc.h>
+#include <map>
+#include <string>
 #include "include/base/cef_logging.h"
 #include "json.hpp"
-#include <map>
-#include <rpc.h>
-#include <string>
 #include "rpc.hpp"
-#include <SDL3/sdl.h>
 
 using json = nlohmann::json;
 
@@ -25,20 +25,18 @@ const char kOnEvalMessage[] = "RenderProcessHandler.OnEval";
 
 RenderProcessHandler::RenderProcessHandler() {}
 
-CefRefPtr<CefRenderProcessHandler> RenderProcessHandler::GetRenderProcessHandler() {
+CefRefPtr<CefRenderProcessHandler>
+RenderProcessHandler::GetRenderProcessHandler() {
   return this;
 }
 
-void RenderProcessHandler::OnWebKitInitialized() {
-}
+void RenderProcessHandler::OnWebKitInitialized() {}
 
 void RenderProcessHandler::OnBrowserCreated(
     CefRefPtr<CefBrowser> browser,
-    CefRefPtr<CefDictionaryValue> extra_info) {
-}
+    CefRefPtr<CefDictionaryValue> extra_info) {}
 
-void RenderProcessHandler::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) {
-}
+void RenderProcessHandler::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) {}
 
 CefRefPtr<CefLoadHandler> RenderProcessHandler::GetLoadHandler() {
   return nullptr;
@@ -67,9 +65,11 @@ class MouseOverHandler : public CefV8Handler {
     request.methodName = "OnMouseOver";
     request.instanceId = frame->GetBrowser()->GetIdentifier();
     Browser_OnMouseOver mouseOverArguments;
-    mouseOverArguments.tagName = target->GetValue("tagName")->GetStringValue().ToString();
+    mouseOverArguments.tagName =
+        target->GetValue("tagName")->GetStringValue().ToString();
     if (mouseOverArguments.tagName == "INPUT") {
-      mouseOverArguments.inputType = target->GetValue("type")->GetStringValue().ToString();
+      mouseOverArguments.inputType =
+          target->GetValue("type")->GetStringValue().ToString();
     }
     CefV8ValueList closestArguments;
     closestArguments.push_back(CefV8Value::CreateString("a"));
@@ -78,7 +78,8 @@ class MouseOverHandler : public CefV8Handler {
     CefV8ValueList getBoundingClientRectArguments;
     CefRefPtr<CefV8Value> rectangle;
     if (closestResult->IsObject()) {
-      std::string href = closestResult->GetValue("href")->GetStringValue().ToString();
+      std::string href =
+          closestResult->GetValue("href")->GetStringValue().ToString();
       if (!href.empty()) {
         mouseOverArguments.href = href;
       }
@@ -89,13 +90,17 @@ class MouseOverHandler : public CefV8Handler {
       rectangle = target->GetValue("getBoundingClientRect")
                       ->ExecuteFunction(target, getBoundingClientRectArguments);
     }
-    mouseOverArguments.rectangle.x = rectangle->GetValue("left")->GetDoubleValue();
-    mouseOverArguments.rectangle.y = rectangle->GetValue("top")->GetDoubleValue();
-    mouseOverArguments.rectangle.width = rectangle->GetValue("right")->GetDoubleValue() - mouseOverArguments.rectangle.x;
+    mouseOverArguments.rectangle.x =
+        rectangle->GetValue("left")->GetDoubleValue();
+    mouseOverArguments.rectangle.y =
+        rectangle->GetValue("top")->GetDoubleValue();
+    mouseOverArguments.rectangle.width =
+        rectangle->GetValue("right")->GetDoubleValue() -
+        mouseOverArguments.rectangle.x;
     mouseOverArguments.rectangle.height =
         rectangle->GetValue("bottom")->GetDoubleValue() -
         mouseOverArguments.rectangle.y;
-    
+
     request.arguments = mouseOverArguments;
     json jsonRequest = request;
     CefRefPtr<CefProcessMessage> message =
@@ -122,7 +127,7 @@ class MessageHandler : public CefV8Handler {
     CefRefPtr<CefV8Value> window = context->GetGlobal();
     CefRefPtr<CefFrame> frame = context->GetFrame();
     CefRefPtr<CefV8Value> event = arguments.front();
-    
+
     CefRefPtr<CefProcessMessage> message =
         CefProcessMessage::Create(kOnMessageMessage);
 
@@ -161,7 +166,7 @@ class NavigateHandler : public CefV8Handler {
     CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
     CefRefPtr<CefFrame> frame = context->GetFrame();
     CefRefPtr<CefV8Value> event = arguments.front();
-    
+
     RpcRequest request;
     request.id = CreateUuid();
     request.className = "Browser";
@@ -177,14 +182,16 @@ class NavigateHandler : public CefV8Handler {
     navigateArguments.destination.key =
         event->GetValue("destination")->GetValue("key")->GetStringValue();
     navigateArguments.destination.sameDocument = event->GetValue("destination")
-                                           ->GetValue("sameDocument")
-                                           ->GetBoolValue();
+                                                     ->GetValue("sameDocument")
+                                                     ->GetBoolValue();
     navigateArguments.formData = std::nullopt;  // TODO: Populate form data
-    navigateArguments.hashChange = event->GetValue("hashChange")->GetBoolValue();
+    navigateArguments.hashChange =
+        event->GetValue("hashChange")->GetBoolValue();
     navigateArguments.navigationType =
         event->GetValue("navigationType")->GetStringValue();
-    navigateArguments.userInitiated = event->GetValue("userInitiated")->GetBoolValue();
-    
+    navigateArguments.userInitiated =
+        event->GetValue("userInitiated")->GetBoolValue();
+
     request.arguments = navigateArguments;
     json jsonRequest = request;
     CefRefPtr<CefProcessMessage> message =
@@ -219,13 +226,15 @@ class FocusOutHandler : public CefV8Handler {
     request.instanceId = frame->GetBrowser()->GetIdentifier();
     Browser_FocusOut focusOutArguments;
     if (!relatedTarget->IsNull()) {
-      focusOutArguments.tagName = relatedTarget->GetValue("tagName")->GetStringValue();
+      focusOutArguments.tagName =
+          relatedTarget->GetValue("tagName")->GetStringValue();
       CefRefPtr<CefV8Value> attributes = relatedTarget->GetValue("attributes");
-      std::string inputType =  attributes->GetValue("type")->GetStringValue();
+      std::string inputType = attributes->GetValue("type")->GetStringValue();
       if (!inputType.empty()) {
         focusOutArguments.inputType = inputType;
       }
-      focusOutArguments.isEditable = attributes->GetValue("isEditable")->GetBoolValue();
+      focusOutArguments.isEditable =
+          attributes->GetValue("isEditable")->GetBoolValue();
     }
     request.arguments = focusOutArguments;
     json jsonRequest = request;
@@ -241,16 +250,18 @@ class FocusOutHandler : public CefV8Handler {
 };
 
 void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
-                                         CefRefPtr<CefFrame> frame,
-                                         CefRefPtr<CefV8Context> context) {
+                                            CefRefPtr<CefFrame> frame,
+                                            CefRefPtr<CefV8Context> context) {
   CefRefPtr<CefV8Value> window = context->GetGlobal();
-  
+
   // mouse over
   CefRefPtr<CefV8Handler> mouseOverHandler = new MouseOverHandler();
   CefV8ValueList mouseOverArguments;
   mouseOverArguments.push_back(CefV8Value::CreateString("mouseover"));
-  mouseOverArguments.push_back(CefV8Value::CreateFunction("onMouseOver", mouseOverHandler));
-  window->GetValue("addEventListener")->ExecuteFunction(window, mouseOverArguments);
+  mouseOverArguments.push_back(
+      CefV8Value::CreateFunction("onMouseOver", mouseOverHandler));
+  window->GetValue("addEventListener")
+      ->ExecuteFunction(window, mouseOverArguments);
 
   // navigation
   CefRefPtr<CefV8Value> navigation = window->GetValue("navigation");
@@ -259,7 +270,8 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   navigateArguments.push_back(CefV8Value::CreateString("navigate"));
   navigateArguments.push_back(
       CefV8Value::CreateFunction("onNavigate", navigateHandler));
-  navigation->GetValue("addEventListener")->ExecuteFunction(navigation, navigateArguments);
+  navigation->GetValue("addEventListener")
+      ->ExecuteFunction(navigation, navigateArguments);
 
   // focus out
   CefRefPtr<CefV8Value> document = window->GetValue("document");
@@ -282,21 +294,19 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
 }
 
 void RenderProcessHandler::OnContextReleased(CefRefPtr<CefBrowser> browser,
-                                          CefRefPtr<CefFrame> frame,
-                                          CefRefPtr<CefV8Context> context) {
-}
+                                             CefRefPtr<CefFrame> frame,
+                                             CefRefPtr<CefV8Context> context) {}
 
 void RenderProcessHandler::OnUncaughtException(
     CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefV8Context> context,
     CefRefPtr<CefV8Exception> exception,
-    CefRefPtr<CefV8StackTrace> stackTrace) {
-}
+    CefRefPtr<CefV8StackTrace> stackTrace) {}
 
 void RenderProcessHandler::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
-                                             CefRefPtr<CefFrame> frame,
-                                             CefRefPtr<CefDOMNode> node) {
+                                                CefRefPtr<CefFrame> frame,
+                                                CefRefPtr<CefDOMNode> node) {
   if (node.get()) {
     RpcRequest request;
     request.id = CreateUuid();
@@ -322,7 +332,9 @@ void RenderProcessHandler::OnFocusedNodeChanged(CefRefPtr<CefBrowser> browser,
 // Custom handler for our promise "then" callback
 class PromiseThenHandler : public CefV8Handler {
  public:
-  explicit PromiseThenHandler(CefRefPtr<CefFrame> frame, CefProcessId sourceProcessId, const UUID messageId)
+  explicit PromiseThenHandler(CefRefPtr<CefFrame> frame,
+                              CefProcessId sourceProcessId,
+                              const UUID messageId)
       : frame(frame), sourceProcessId(sourceProcessId), messageId(messageId) {}
 
   bool Execute(const CefString& name,
@@ -377,11 +389,13 @@ bool RenderProcessHandler::OnProcessMessageReceived(
   if (name == "Eval") {
     const CefString& payload = message->GetArgumentList()->GetString(0);
     RpcRequest request = json::parse(payload.ToString()).get<RpcRequest>();
-    Browser_EvalJavaScript arguments = request.arguments.get<Browser_EvalJavaScript>();
+    Browser_EvalJavaScript arguments =
+        request.arguments.get<Browser_EvalJavaScript>();
     CefRefPtr<CefV8Value> retval;
     CefRefPtr<CefV8Exception> exception;
     bool success =
-        context->Eval(CefString(arguments.code), CefString(arguments.scriptUrl), arguments.startLine, retval, exception);
+        context->Eval(CefString(arguments.code), CefString(arguments.scriptUrl),
+                      arguments.startLine, retval, exception);
     if (success && retval->IsPromise()) {
       CefRefPtr<CefV8Value> thenFunction = retval->GetValue("then");
       CefRefPtr<PromiseThenHandler> handler =
@@ -389,14 +403,15 @@ bool RenderProcessHandler::OnProcessMessageReceived(
       CefRefPtr<CefV8Value> onResolvedFunc =
           CefV8Value::CreateFunction("onPromiseResolved", handler);
       thenFunction->ExecuteFunction(retval, {onResolvedFunc});
-     } else {
+    } else {
       RpcResponse response;
       response.requestId = request.id;
       response.success = success;
       if (success) {
         CefRefPtr<CefV8Value> window = context->GetGlobal();
         CefRefPtr<CefV8Value> jsonObj = window->GetValue("JSON");
-        CefRefPtr<CefV8Value> stringifyFunction = jsonObj->GetValue("stringify");
+        CefRefPtr<CefV8Value> stringifyFunction =
+            jsonObj->GetValue("stringify");
         CefV8ValueList stringifyArguments;
         stringifyArguments.push_back(retval);
         const CefString& result =
@@ -422,9 +437,9 @@ bool RenderProcessHandler::OnProcessMessageReceived(
       json jsonResponse = response;
       responseMessage->GetArgumentList()->SetString(0, jsonResponse.dump());
       frame->SendProcessMessage(source_process, responseMessage);
-     }
-     handled = true;
-   }
-   context->Exit();
-   return handled;
- }
+    }
+    handled = true;
+  }
+  context->Exit();
+  return handled;
+}

@@ -10,9 +10,10 @@
 #include "process_handler.h"
 
 // Client app implementation for the renderer process.
-class RenderProcessHandler : public ProcessHandler, public CefRenderProcessHandler {
+class RenderProcessHandler : public ProcessHandler,
+                             public CefRenderProcessHandler {
  public:
-    RenderProcessHandler();
+  RenderProcessHandler();
 
  private:
   // CefApp methods.

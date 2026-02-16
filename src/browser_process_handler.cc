@@ -1,27 +1,27 @@
-#include <iostream>
 #include <stdio.h>
-#include <thread>
+#include <windows.h>
+#include <condition_variable>
+#include <iostream>
 #include <mutex>
 #include <queue>
-#include <condition_variable>
 #include <string>
+#include <thread>
 #include <variant>
-#include <windows.h>
 
-#include <include/base/cef_callback.h>
-#include <include/cef_task.h>
-#include <include/cef_parser.h>
-#include <include/base/cef_bind.h>
-#include <include/wrapper/cef_closure_task.h>
 #include <SDL3/sdl.h>
 #include <SDL3_net/SDL_net.h>
+#include <include/base/cef_bind.h>
+#include <include/base/cef_callback.h>
+#include <include/cef_parser.h>
+#include <include/cef_task.h>
+#include <include/wrapper/cef_closure_task.h>
 #include <json.hpp>
 
 #include "browser_handler.h"
 #include "browser_process_handler.h"
+#include "guid_ext.hpp"
 #include "rpc.hpp"
 #include "thread_safe_queue.hpp"
-#include "guid_ext.hpp"
 
 using json = nlohmann::json;
 
@@ -29,8 +29,10 @@ const char kEvalMessage[] = "Eval";
 
 // Callback for CefBrowserHost::DownloadImage
 class DownloadImageCallback : public CefDownloadImageCallback {
-public:
-  DownloadImageCallback(BrowserProcessHandler* handler, const UUID& requestId, const std::string& imageUrl)
+ public:
+  DownloadImageCallback(BrowserProcessHandler* handler,
+                        const UUID& requestId,
+                        const std::string& imageUrl)
       : handler(handler), requestId(requestId), imageUrl(imageUrl) {}
 
   void OnDownloadImageFinished(const CefString& image_url,
@@ -44,8 +46,9 @@ public:
       float scale_factor = 1.0f;
       int pixel_width = 0;
       int pixel_height = 0;
-      
-      CefRefPtr<CefBinaryValue> binary = image_->GetAsPNG(scale_factor, true, pixel_width, pixel_height);
+
+      CefRefPtr<CefBinaryValue> binary =
+          image_->GetAsPNG(scale_factor, true, pixel_width, pixel_height);
       if (binary && binary->GetSize() > 0) {
         std::vector<uint8_t> data(binary->GetSize());
         binary->GetData(data.data(), data.size(), 0);
@@ -62,11 +65,11 @@ public:
     response.success = true;
     response.returnValue = arguments;
     json jsonResponse = response;
-    
+
     handler->SendMessage(jsonResponse.dump());
   }
 
-private:
+ private:
   BrowserProcessHandler* handler;
   UUID requestId;
   std::string imageUrl;
@@ -76,7 +79,7 @@ private:
 
 // Callback for CefFrame::GetSource
 class GetSourceStringVisitor : public CefStringVisitor {
-public:
+ public:
   GetSourceStringVisitor(BrowserProcessHandler* handler, const UUID& requestId)
       : handler(handler), requestId(requestId) {}
 
@@ -89,23 +92,26 @@ public:
     handler->SendMessage(jsonResponse.dump());
   }
 
-private:
+ private:
   BrowserProcessHandler* handler;
   UUID requestId;
 
   IMPLEMENT_REFCOUNTING(GetSourceStringVisitor);
 };
 
-BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HWND applicationMessageWindowHandle, int windowMessageId)
-: applicationProcessHandle(applicationProcessHandle),
-  applicationMessageWindowHandle(applicationMessageWindowHandle),
-  windowMessageId(windowMessageId),
-  outgoingMessageQueue(),
-  responseMapMutex(SDL_CreateMutex()),
-  socketServer(NULL),
-  browserHandlers(),
-  isShuttingDown(false),
-  streamSocket(nullptr) {}
+BrowserProcessHandler::BrowserProcessHandler(
+    HANDLE applicationProcessHandle,
+    HWND applicationMessageWindowHandle,
+    int windowMessageId)
+    : applicationProcessHandle(applicationProcessHandle),
+      applicationMessageWindowHandle(applicationMessageWindowHandle),
+      windowMessageId(windowMessageId),
+      outgoingMessageQueue(),
+      responseMapMutex(SDL_CreateMutex()),
+      socketServer(NULL),
+      browserHandlers(),
+      isShuttingDown(false),
+      streamSocket(nullptr) {}
 
 BrowserProcessHandler::~BrowserProcessHandler() {
   SDL_DestroyMutex(responseMapMutex);
@@ -124,7 +130,8 @@ CefRefPtr<CefBrowser> BrowserProcessHandler::GetBrowser(int browserId) {
   return nullptr;
 }
 
-CefRefPtr<BrowserHandler> BrowserProcessHandler::GetBrowserHandler(int browserId) {
+CefRefPtr<BrowserHandler> BrowserProcessHandler::GetBrowserHandler(
+    int browserId) {
   auto it = browserHandlers.find(browserId);
   if (it != browserHandlers.end()) {
     return it->second;
@@ -145,7 +152,8 @@ void BrowserProcessHandler::RemoveBrowserHandler(int browserId) {
   }
 }
 
-CefRefPtr<CefBrowserProcessHandler> BrowserProcessHandler::GetBrowserProcessHandler() {
+CefRefPtr<CefBrowserProcessHandler>
+BrowserProcessHandler::GetBrowserProcessHandler() {
   return this;
 }
 
@@ -173,7 +181,7 @@ void BrowserProcessHandler::OnContextInitialized() {
     SDL_Log(SDL_GetError());
     abort();
   }
-  
+
   socketServer = NET_CreateServer(NULL, 3000);
   if (socketServer == NULL) {
     SDL_Log(SDL_GetError());
@@ -195,7 +203,7 @@ void BrowserProcessHandler::OnContextInitialized() {
   CloseHandle(hEvent);
 
   // Wait for a client to connect before spawning I/O threads.
-  void* waitSockets[] = { static_cast<void*>(socketServer) };
+  void* waitSockets[] = {static_cast<void*>(socketServer)};
   NET_WaitUntilInputAvailable(waitSockets, 1, -1);
 
   if (!NET_AcceptClient(socketServer, &streamSocket)) {
@@ -208,7 +216,8 @@ void BrowserProcessHandler::OnContextInitialized() {
   }
   SDL_Log("Client connected!");
 
-  SDL_Thread* receiveThread = SDL_CreateThread(RpcReceiveThread, "CefRpcReceive", this);
+  SDL_Thread* receiveThread =
+      SDL_CreateThread(RpcReceiveThread, "CefRpcReceive", this);
   if (receiveThread == NULL) {
     SDL_Log("Failed creating RPC receive thread: %s", SDL_GetError());
     abort();
@@ -221,7 +230,9 @@ void BrowserProcessHandler::OnContextInitialized() {
   }
 }
 
-void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle) {
+void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId,
+                                                    const CefString& url,
+                                                    const CefRect& rectangle) {
   CefWindowInfo windowInfo;
   windowInfo.SetAsWindowless(nullptr);  // no OS parent
   windowInfo.windowless_rendering_enabled = true;
@@ -238,12 +249,7 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId, const
   CefRefPtr<BrowserHandler> handler = new BrowserHandler(this, rectangle);
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(
-      windowInfo,
-      handler,
-      url,
-      browserSettings,
-      extraInfo, 
-      requestContext);
+      windowInfo, handler, url, browserSettings, extraInfo, requestContext);
 
   handler->SetBrowser(browser);
 
@@ -278,11 +284,15 @@ void BrowserProcessHandler::Client_ShutdownRpc() {
   }
 }
 
-void BrowserProcessHandler::Browser_CloseRpc(const CefRefPtr<CefBrowser> browser, bool forceClose) {
+void BrowserProcessHandler::Browser_CloseRpc(
+    const CefRefPtr<CefBrowser> browser,
+    bool forceClose) {
   browser->GetHost()->CloseBrowser(forceClose);
 }
 
-void BrowserProcessHandler::Browser_TryCloseRpc(const CefRefPtr<CefBrowser> browser, const UUID& requestId) {
+void BrowserProcessHandler::Browser_TryCloseRpc(
+    const CefRefPtr<CefBrowser> browser,
+    const UUID& requestId) {
   bool canClose = browser->GetHost()->TryCloseBrowser();
   RpcResponse response;
   response.requestId = requestId;
@@ -295,7 +305,8 @@ void BrowserProcessHandler::SendMessage(std::string payload) {
   outgoingMessageQueue.push(payload);
 }
 
-void BrowserProcessHandler::SendErrorMessage(const UUID& requestId, std::string message) {
+void BrowserProcessHandler::SendErrorMessage(const UUID& requestId,
+                                             std::string message) {
   RpcResponse response;
   response.requestId = requestId;
   response.success = false;
@@ -305,34 +316,38 @@ void BrowserProcessHandler::SendErrorMessage(const UUID& requestId, std::string 
 }
 
 void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
-if (request.className == "Client") {
-  if (request.methodName == "CreateBrowser") {
+  if (request.className == "Client") {
+    if (request.methodName == "CreateBrowser") {
       Client_CreateBrowser arguments =
           request.arguments.get<Client_CreateBrowser>();
-      CefPostTask(TID_UI, base::BindOnce(
-                              &BrowserProcessHandler::Client_CreateBrowserRpc,
-                              this, request.id, arguments.url,
-                              arguments.rectangle));
+      CefPostTask(
+          TID_UI,
+          base::BindOnce(&BrowserProcessHandler::Client_CreateBrowserRpc, this,
+                         request.id, arguments.url, arguments.rectangle));
       return;
     }
 
     if (request.methodName == "Shutdown") {
-      CefPostTask(TID_UI,
-                  base::BindOnce(&BrowserProcessHandler::Client_ShutdownRpc, this));
+      CefPostTask(
+          TID_UI,
+          base::BindOnce(&BrowserProcessHandler::Client_ShutdownRpc, this));
       return;
     }
   }
 
   if (request.className == "Browser") {
-    CefRefPtr<BrowserHandler> browserHandler = this->GetBrowserHandler(request.instanceId);
+    CefRefPtr<BrowserHandler> browserHandler =
+        this->GetBrowserHandler(request.instanceId);
     if (!browserHandler) {
-      std::string message = "Browser handler for browser instance " + std::to_string(request.instanceId) + " not found.";
+      std::string message = "Browser handler for browser instance " +
+                            std::to_string(request.instanceId) + " not found.";
       this->SendErrorMessage(request.id, message);
       return;
     }
     CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
     if (!browser) {
-      std::string message = "Browser instance " + std::to_string(request.instanceId) + " not found.";
+      std::string message = "Browser instance " +
+                            std::to_string(request.instanceId) + " not found.";
       this->SendErrorMessage(request.id, message);
       return;
     }
@@ -476,27 +491,27 @@ if (request.className == "Client") {
 
     if (request.methodName == "Close") {
       Browser_Close arguments = request.arguments.get<Browser_Close>();
-      CefPostTask(
-          TID_UI,
-          base::BindOnce(&BrowserProcessHandler::Browser_CloseRpc, this, browser, arguments.forceClose));
+      CefPostTask(TID_UI,
+                  base::BindOnce(&BrowserProcessHandler::Browser_CloseRpc, this,
+                                 browser, arguments.forceClose));
       return;
     }
 
     if (request.methodName == "TryClose") {
       CefPostTask(TID_UI,
-                  base::BindOnce(&BrowserProcessHandler::Browser_TryCloseRpc, this, browser, request.id));
+                  base::BindOnce(&BrowserProcessHandler::Browser_TryCloseRpc,
+                                 this, browser, request.id));
       return;
     }
 
     if (request.methodName == "DownloadImage") {
-      Browser_DownloadImage arguments = request.arguments.get<Browser_DownloadImage>();
-      CefRefPtr<DownloadImageCallback> callback = 
+      Browser_DownloadImage arguments =
+          request.arguments.get<Browser_DownloadImage>();
+      CefRefPtr<DownloadImageCallback> callback =
           new DownloadImageCallback(this, request.id, arguments.imageUrl);
       browser->GetHost()->DownloadImage(
-          arguments.imageUrl,
-          arguments.isFavicon,
-          static_cast<uint32_t>(arguments.maxImageSize),
-          arguments.bypassCache,
+          arguments.imageUrl, arguments.isFavicon,
+          static_cast<uint32_t>(arguments.maxImageSize), arguments.bypassCache,
           callback);
       return;
     }
@@ -528,7 +543,8 @@ void BrowserProcessHandler::HandleRpcResponse(RpcResponse response) {
   SDL_UnlockMutex(this->responseMapMutex);
 }
 
-template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
+template <typename T>
+T BrowserProcessHandler::WaitForResponse(UUID requestId) {
   std::unique_ptr<ResponseEntry> entry = std::make_unique<ResponseEntry>();
 
   // Insert into map under map mutex
@@ -563,9 +579,11 @@ template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
     // Log parse error, location and a truncated payload preview (safe length)
     size_t previewLen = std::min<size_t>(payload.size(), 256);
     std::string preview = payload.substr(0, previewLen);
-    SDL_Log("WaitForResponse: JSON parse_error: %s at byte=%u payload_preview='%s'",
-            e_parse.what(), static_cast<unsigned int>(e_parse.byte), preview.c_str());
-    throw; // rethrow so caller can handle the failure
+    SDL_Log(
+        "WaitForResponse: JSON parse_error: %s at byte=%u payload_preview='%s'",
+        e_parse.what(), static_cast<unsigned int>(e_parse.byte),
+        preview.c_str());
+    throw;  // rethrow so caller can handle the failure
   } catch (const std::exception& e) {
     SDL_Log("WaitForResponse: JSON exception: %s", e.what());
     throw;
@@ -574,7 +592,8 @@ template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
 
 int BrowserProcessHandler::RpcReceiveThread(void* browserProcessHandlerPtr) {
   CefRefPtr<BrowserProcessHandler> handler =
-      base::WrapRefCounted<BrowserProcessHandler>(static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
+      base::WrapRefCounted<BrowserProcessHandler>(
+          static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
 
   SDL_Log("Receive thread running");
 
@@ -583,10 +602,11 @@ int BrowserProcessHandler::RpcReceiveThread(void* browserProcessHandlerPtr) {
 
   while (true) {
     // Block until the client sends data.
-    void* waitSockets[] = { static_cast<void*>(handler->streamSocket) };
+    void* waitSockets[] = {static_cast<void*>(handler->streamSocket)};
     NET_WaitUntilInputAvailable(waitSockets, 1, -1);
 
-    int received = NET_ReadFromStreamSocket(handler->streamSocket, temp, sizeof(temp));
+    int received =
+        NET_ReadFromStreamSocket(handler->streamSocket, temp, sizeof(temp));
     if (received > 0) {
       recvBuffer.insert(recvBuffer.end(), temp, temp + received);
     } else if (received < 0) {
@@ -635,7 +655,8 @@ int BrowserProcessHandler::RpcReceiveThread(void* browserProcessHandlerPtr) {
 
 int BrowserProcessHandler::RpcSendThread(void* browserProcessHandlerPtr) {
   CefRefPtr<BrowserProcessHandler> handler =
-      base::WrapRefCounted<BrowserProcessHandler>(static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
+      base::WrapRefCounted<BrowserProcessHandler>(
+          static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
 
   SDL_Log("Send thread running");
 
@@ -652,20 +673,20 @@ int BrowserProcessHandler::RpcSendThread(void* browserProcessHandlerPtr) {
     }
 
     int total = static_cast<int>(sendBuf.size());
-    if (!NET_WriteToStreamSocket(handler->streamSocket, sendBuf.data(), total)) {
+    if (!NET_WriteToStreamSocket(handler->streamSocket, sendBuf.data(),
+                                 total)) {
       SDL_Log("NET_WriteToStreamSocket failed or connection closed: %s",
               SDL_GetError());
       break;
     }
     NET_WaitUntilStreamSocketDrained(handler->streamSocket, -1);
-    PostMessageW(handler->applicationMessageWindowHandle, handler->windowMessageId, 0, 0);
+    PostMessageW(handler->applicationMessageWindowHandle,
+                 handler->windowMessageId, 0, 0);
   }
   return 0;
 }
 
-template std::monostate 
-    BrowserProcessHandler::WaitForResponse<std::monostate>(UUID);
-template bool 
-    BrowserProcessHandler::WaitForResponse<bool>(UUID);
-template CefRect
-    BrowserProcessHandler::WaitForResponse<CefRect>(UUID);
+template std::monostate BrowserProcessHandler::WaitForResponse<std::monostate>(
+    UUID);
+template bool BrowserProcessHandler::WaitForResponse<bool>(UUID);
+template CefRect BrowserProcessHandler::WaitForResponse<CefRect>(UUID);

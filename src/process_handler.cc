@@ -40,21 +40,21 @@ ProcessHandler::ProcessType ProcessHandler::GetProcessType(
   return OtherProcess;
 }
 
-std::string ProcessHandler::ProcessTypeToString(ProcessHandler::ProcessType type) {
-    switch (type) {
-        case BrowserProcess:
-            return "Browser";
-        case RendererProcess:
-            return "Renderer";
-        case ZygoteProcess:
-            return "Zygote";
-        case OtherProcess:
-            return "Other";
-        default:
-          return "Unknown";
-    }
+std::string ProcessHandler::ProcessTypeToString(
+    ProcessHandler::ProcessType type) {
+  switch (type) {
+    case BrowserProcess:
+      return "Browser";
+    case RendererProcess:
+      return "Renderer";
+    case ZygoteProcess:
+      return "Zygote";
+    case OtherProcess:
+      return "Other";
+    default:
+      return "Unknown";
+  }
 }
 
 void ProcessHandler::OnRegisterCustomSchemes(
-    CefRawPtr<CefSchemeRegistrar> registrar) {
-}
+    CefRawPtr<CefSchemeRegistrar> registrar) {}

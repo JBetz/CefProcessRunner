@@ -2,20 +2,20 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
+#include <windows.h>
 #include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
-#include <windows.h>
 
 #include "include/cef_command_line.h"
 #include "include/cef_sandbox_win.h"
 
-#include "process_handler.h"
 #include "browser_process_handler.h"
-#include "other_process_handler.h"
-#include "render_process_handler.h"
 #include "command_line_switches.h"
+#include "other_process_handler.h"
+#include "process_handler.h"
+#include "render_process_handler.h"
 
 // When generating projects with CMake the CEF_USE_SANDBOX value will be defined
 // automatically if using the required compiler version. Pass -DUSE_SANDBOX=OFF
@@ -28,7 +28,6 @@
 // versions.
 #pragma comment(lib, "cef_sandbox.lib")
 #endif
-
 
 // Entry point function for all processes.
 int APIENTRY wWinMain(HINSTANCE hInstance,
@@ -72,18 +71,20 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
   command_line->InitFromString(::GetCommandLineW());
   std::optional<int> application_process_id;
-  std::string application_process_id_value = command_line->GetSwitchValue(switches::kApplicationProcessId);
+  std::string application_process_id_value =
+      command_line->GetSwitchValue(switches::kApplicationProcessId);
   if (!application_process_id_value.empty()) {
-      application_process_id = std::stoi(application_process_id_value);
+    application_process_id = std::stoi(application_process_id_value);
   }
 
   // Create a ProcessHandler of the correct type.
   CefRefPtr<CefApp> handler;
-  ProcessHandler::ProcessType process_type = ProcessHandler::GetProcessType(command_line);
+  ProcessHandler::ProcessType process_type =
+      ProcessHandler::GetProcessType(command_line);
 
   SDL_Log((std::string("Running process type: ") +
-                      ProcessHandler::ProcessTypeToString(process_type) + "\n")
-                         .c_str());
+           ProcessHandler::ProcessTypeToString(process_type) + "\n")
+              .c_str());
 
   if (process_type == ProcessHandler::BrowserProcess) {
     const std::string& application_process_id_str =
@@ -92,7 +93,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
         command_line->GetSwitchValue(switches::kApplicationMessageWindowHandle);
     const std::string& window_message_id_str =
         command_line->GetSwitchValue(switches::kWindowMessageId);
-    
+
     if (application_process_id_str.empty()) {
       SDL_Log("ERROR: --application-process-id is required");
       return 1;
@@ -105,29 +106,33 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
       SDL_Log("ERROR: --window-message-id is required");
       return 1;
     }
-    
+
     int applicationProcessId = std::stoi(application_process_id_str);
-    HANDLE applicationProcessHandle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, applicationProcessId);
+    HANDLE applicationProcessHandle =
+        OpenProcess(PROCESS_DUP_HANDLE, FALSE, applicationProcessId);
     if (applicationProcessHandle == NULL) {
-      SDL_Log("ERROR: OpenProcess failed for process id %s", application_process_id_str.c_str());
+      SDL_Log("ERROR: OpenProcess failed for process id %s",
+              application_process_id_str.c_str());
       return 1;
     }
-    
+
     HWND applicationMessageWindowHandle = reinterpret_cast<HWND>(
         std::stoull(application_message_window_handle_str));
 
     int windowMessageId = std::stoi(window_message_id_str);
-    
-    handler = new BrowserProcessHandler(applicationProcessHandle, applicationMessageWindowHandle, windowMessageId);
+
+    handler = new BrowserProcessHandler(applicationProcessHandle,
+                                        applicationMessageWindowHandle,
+                                        windowMessageId);
   } else if (process_type == ProcessHandler::RendererProcess) {
     handler = new RenderProcessHandler();
   } else if (process_type == ProcessHandler::OtherProcess) {
     handler = new OtherProcessHandler();
   }
 
-  // CEF Handlerlications have multiple sub-processes (render, GPU, etc) that share
-  // the same executable. This function checks the command-line and, if this is
-  // a sub-process, executes the Handlerropriate logic.
+  // CEF Handlerlications have multiple sub-processes (render, GPU, etc) that
+  // share the same executable. This function checks the command-line and, if
+  // this is a sub-process, executes the Handlerropriate logic.
   exit_code = CefExecuteProcess(main_args, handler, sandbox_info);
   if (exit_code >= 0) {
     return exit_code;
@@ -138,11 +143,10 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
   settings.no_sandbox = true;
   settings.log_severity = LOGSEVERITY_DEFAULT;
   settings.windowless_rendering_enabled = true;
-  std::filesystem::path cache_path = std::filesystem::current_path() / "cache"; 
+  std::filesystem::path cache_path = std::filesystem::current_path() / "cache";
   CefString(&settings.cache_path) = cache_path;
   std::filesystem::path log_file = std::filesystem::current_path() / "cef.log";
   CefString(&settings.log_file) = log_file;
-  
 
   // Initialize the CEF browser process. The first browser instance will be
   // created in CefBrowserProcessHandler::OnContextInitialized() after CEF has

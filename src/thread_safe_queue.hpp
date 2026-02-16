@@ -1,7 +1,7 @@
 #pragma once
 
-#include <queue>
 #include <SDL3/sdl.h>
+#include <queue>
 
 template <typename T>
 class ThreadSafeQueue {

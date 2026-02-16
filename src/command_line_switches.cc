@@ -57,7 +57,8 @@ const char kUseBottomControls[] = "use-bottom-controls";
 const char kHidePipFrame[] = "hide-pip-frame";
 const char kHideChromeBubbles[] = "hide-chrome-bubbles";
 const char kApplicationProcessId[] = "application-process-id";
-const char kApplicationMessageWindowHandle[] = "application-message-window-handle";
+const char kApplicationMessageWindowHandle[] =
+    "application-message-window-handle";
 const char kWindowMessageId[] = "window-message-id";
 
 }  // namespace switches

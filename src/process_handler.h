@@ -28,7 +28,7 @@ class ProcessHandler : public CefApp, CefClient {
   // Registers custom schemes. Implemented by cefclient in
   // client_app_delegates_common.cc
   static void RegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar);
-   
+
   void OnRegisterCustomSchemes(
       CefRawPtr<CefSchemeRegistrar> registrar) override;
 

@@ -1,27 +1,25 @@
 #pragma once
 
-#include "include/internal/cef_types_wrappers.h"
-#include "json.hpp"
-#include <optional>
 #include <rpc.h>
+#include <optional>
 #include <string>
 #include <variant>
+#include "include/internal/cef_types_wrappers.h"
+#include "json.hpp"
 
 using json = nlohmann::json;
 
 // monostate - must be in nlohmann namespace for ADL to work
 namespace nlohmann {
-  template <>
-  struct adl_serializer<std::monostate> {
-    static void to_json(json& j, const std::monostate&) {
-      j = nullptr;
-    }
+template <>
+struct adl_serializer<std::monostate> {
+  static void to_json(json& j, const std::monostate&) { j = nullptr; }
 
-    static void from_json(const json&, std::monostate&) {
-      // monostate has no state to restore
-    }
-  };
-}
+  static void from_json(const json&, std::monostate&) {
+    // monostate has no state to restore
+  }
+};
+}  // namespace nlohmann
 
 // HANDLE
 inline void to_json(json& j, const HANDLE& m) {
@@ -285,10 +283,10 @@ struct Browser_FocusOut {
 
 inline void to_json(json& j, const Browser_FocusOut& m) {
   j = json::object();
-  j["tagName"] = m.tagName; 
+  j["tagName"] = m.tagName;
   j["inputType"] = m.inputType;
   j["isEditable"] = m.isEditable;
- }
+}
 
 // Response messages
 struct RpcResponse {
