@@ -100,7 +100,6 @@ BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HW
 : applicationProcessHandle(applicationProcessHandle),
   applicationMessageWindowHandle(applicationMessageWindowHandle),
   windowMessageId(windowMessageId),
-  incomingMessageQueue(),
   outgoingMessageQueue(),
   responseMapMutex(SDL_CreateMutex()),
   socketServer(NULL),
@@ -218,12 +217,6 @@ void BrowserProcessHandler::OnContextInitialized() {
   SDL_Thread* sendThread = SDL_CreateThread(RpcSendThread, "CefRpcSend", this);
   if (sendThread == NULL) {
     SDL_Log("Failed creating RPC send thread: %s", SDL_GetError());
-    abort();
-  }
-
-  SDL_Thread* workerThread = SDL_CreateThread(RpcWorkerThread, "CefRpcWorker", this);
-  if (workerThread == NULL) {
-    SDL_Log("Failed creating RPC worker thread: %s", SDL_GetError());
     abort();
   }
 }
@@ -611,9 +604,30 @@ int BrowserProcessHandler::RpcReceiveThread(void* browserProcessHandlerPtr) {
 
       std::string jsonMsg(recvBuffer.begin() + 4,
                           recvBuffer.begin() + 4 + msgLen);
-      handler->incomingMessageQueue.push(jsonMsg);
-
       recvBuffer.erase(recvBuffer.begin(), recvBuffer.begin() + 4 + msgLen);
+
+      json jsonMessage;
+      try {
+        jsonMessage = json::parse(jsonMsg);
+      } catch (const nlohmann::json::parse_error& e_parse) {
+        size_t previewLen = std::min<size_t>(jsonMsg.size(), 256);
+        std::string preview = jsonMsg.substr(0, previewLen);
+        SDL_Log(
+            "RpcReceiveThread: JSON parse_error: %s at byte=%u "
+            "payload_preview='%s'",
+            e_parse.what(), static_cast<unsigned int>(e_parse.byte),
+            preview.c_str());
+        continue;
+      } catch (const std::exception& e) {
+        SDL_Log("RpcReceiveThread: JSON exception: %s", e.what());
+        continue;
+      }
+
+      if (!jsonMessage.contains("requestId")) {
+        handler->HandleRpcRequest(jsonMessage.get<RpcRequest>());
+      } else {
+        handler->HandleRpcResponse(jsonMessage.get<RpcResponse>());
+      }
     }
   }
   return 0;
@@ -645,40 +659,6 @@ int BrowserProcessHandler::RpcSendThread(void* browserProcessHandlerPtr) {
     }
     NET_WaitUntilStreamSocketDrained(handler->streamSocket, -1);
     PostMessageW(handler->applicationMessageWindowHandle, handler->windowMessageId, 0, 0);
-  }
-  return 0;
-}
-
-int BrowserProcessHandler::RpcWorkerThread(void* browserProcessHandlerPtr) {
-  CefRefPtr<BrowserProcessHandler> browserProcessHandler =
-      base::WrapRefCounted<BrowserProcessHandler>(
-          static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
-  while (true) {
-    std::string message = browserProcessHandler->incomingMessageQueue.pop();
-
-    json jsonMessage;
-    try {
-      jsonMessage = json::parse(message);
-    } catch (const nlohmann::json::parse_error& e_parse) {
-      size_t previewLen = std::min<size_t>(message.size(), 256);
-      std::string preview = message.substr(0, previewLen);
-      SDL_Log(
-          "RpcWorkerThread: JSON parse_error: %s at byte=%u "
-          "payload_preview='%s'",
-          e_parse.what(), static_cast<unsigned int>(e_parse.byte),
-          preview.c_str());
-      continue;
-    } catch (const std::exception& e) {
-      SDL_Log("RpcWorkerThread: JSON exception: %s", e.what());
-      continue;
-    }
-
-    if (!jsonMessage.contains("requestId")) {
-      browserProcessHandler->HandleRpcRequest(jsonMessage.get<RpcRequest>());
-    }
-    else {
-      browserProcessHandler->HandleRpcResponse(jsonMessage.get<RpcResponse>());
-    }
   }
   return 0;
 }

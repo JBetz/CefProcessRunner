@@ -45,13 +45,11 @@ public:
   // RPC threads, need to be static.
   static int RpcReceiveThread(void* browserProcessHandlerPtr);
   static int RpcSendThread(void* browserProcessHandlerPtr);
-  static int RpcWorkerThread(void* browserProcessHandlerPtr);
 
  private:
   HANDLE applicationProcessHandle;
   HWND applicationMessageWindowHandle;
   int windowMessageId;
-  ThreadSafeQueue<std::string> incomingMessageQueue;
   ThreadSafeQueue<std::string> outgoingMessageQueue;
   SDL_Mutex* responseMapMutex = nullptr;
   std::map<UUID, std::unique_ptr<ResponseEntry>> responseEntries;
