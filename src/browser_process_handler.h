@@ -43,7 +43,8 @@ public:
   template<typename T> T WaitForResponse(UUID id);
   
   // RPC threads, need to be static.
-  static int RpcServerThread(void* browserProcessHandlerPtr);
+  static int RpcReceiveThread(void* browserProcessHandlerPtr);
+  static int RpcSendThread(void* browserProcessHandlerPtr);
   static int RpcWorkerThread(void* browserProcessHandlerPtr);
 
  private:
@@ -58,6 +59,7 @@ public:
   bool isShuttingDown;
 
   NET_Server* socketServer;
+  NET_StreamSocket* streamSocket;
 
   IMPLEMENT_REFCOUNTING(BrowserProcessHandler);
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessHandler);

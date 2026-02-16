@@ -105,7 +105,8 @@ BrowserProcessHandler::BrowserProcessHandler(HANDLE applicationProcessHandle, HW
   responseMapMutex(SDL_CreateMutex()),
   socketServer(NULL),
   browserHandlers(),
-  isShuttingDown(false) {}
+  isShuttingDown(false),
+  streamSocket(nullptr) {}
 
 BrowserProcessHandler::~BrowserProcessHandler() {
   SDL_DestroyMutex(responseMapMutex);
@@ -182,18 +183,7 @@ void BrowserProcessHandler::OnContextInitialized() {
 
   SDL_Log("Server started on port 3000");
 
-  SDL_Thread* thread = SDL_CreateThread(RpcServerThread, "CefRpcServer", this);
-  if (thread == NULL) {
-    SDL_Log("Failed creating RPC server thread: %s", SDL_GetError());
-    abort();
-  }
-
-  SDL_Thread* workerThread = SDL_CreateThread(RpcWorkerThread, "CefRpcWorker", this);
-  if (workerThread == NULL) {
-    SDL_Log("Failed creating RPC worker thread: %s", SDL_GetError());
-    abort();
-  }
-
+  // Signal that the server is ready, then block until a client connects.
   HANDLE hEvent = OpenEvent(EVENT_MODIFY_STATE, FALSE, L"ChromiumSocketReady");
   if (hEvent == NULL) {
     SDL_Log("Error opening ChromiumSocketReady event: %lu", GetLastError());
@@ -204,6 +194,38 @@ void BrowserProcessHandler::OnContextInitialized() {
     abort();
   }
   CloseHandle(hEvent);
+
+  // Wait for a client to connect before spawning I/O threads.
+  void* waitSockets[] = { static_cast<void*>(socketServer) };
+  NET_WaitUntilInputAvailable(waitSockets, 1, -1);
+
+  if (!NET_AcceptClient(socketServer, &streamSocket)) {
+    SDL_Log("Accept error: %s", SDL_GetError());
+    abort();
+  }
+  if (!streamSocket) {
+    SDL_Log("No client connected after WaitUntilInputAvailable");
+    abort();
+  }
+  SDL_Log("Client connected!");
+
+  SDL_Thread* receiveThread = SDL_CreateThread(RpcReceiveThread, "CefRpcReceive", this);
+  if (receiveThread == NULL) {
+    SDL_Log("Failed creating RPC receive thread: %s", SDL_GetError());
+    abort();
+  }
+
+  SDL_Thread* sendThread = SDL_CreateThread(RpcSendThread, "CefRpcSend", this);
+  if (sendThread == NULL) {
+    SDL_Log("Failed creating RPC send thread: %s", SDL_GetError());
+    abort();
+  }
+
+  SDL_Thread* workerThread = SDL_CreateThread(RpcWorkerThread, "CefRpcWorker", this);
+  if (workerThread == NULL) {
+    SDL_Log("Failed creating RPC worker thread: %s", SDL_GetError());
+    abort();
+  }
 }
 
 void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle) {
@@ -557,86 +579,72 @@ template<typename T> T BrowserProcessHandler::WaitForResponse(UUID requestId) {
   }
 }
 
-int BrowserProcessHandler::RpcServerThread(void* browserProcessHandlerPtr) {
-  CefRefPtr<BrowserProcessHandler> browserProcessHandler =
+int BrowserProcessHandler::RpcReceiveThread(void* browserProcessHandlerPtr) {
+  CefRefPtr<BrowserProcessHandler> handler =
       base::WrapRefCounted<BrowserProcessHandler>(static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
-  NET_Server* socketServer = browserProcessHandler->GetSocketServer();
-  NET_StreamSocket* streamSocket = nullptr;
 
-  SDL_Log("Network thread running");
+  SDL_Log("Receive thread running");
 
-  // Keep a persistent receive buffer so partial reads are preserved.
   std::vector<uint8_t> recvBuffer;
   uint8_t temp[1024];
 
   while (true) {
-    if (!streamSocket) {
-      if (!NET_AcceptClient(socketServer, &streamSocket)) {
-        SDL_Log("Accept error: %s", SDL_GetError());
-        SDL_Delay(1000);
-        continue;
-      }
+    // Block until the client sends data.
+    void* waitSockets[] = { static_cast<void*>(handler->streamSocket) };
+    NET_WaitUntilInputAvailable(waitSockets, 1, -1);
 
-      if (streamSocket) {
-        SDL_Log("Client connected!");
-        recvBuffer.clear();
-      } else {
-        SDL_Delay(100);
-        continue;
-      }
-    }
-
-    int received = NET_ReadFromStreamSocket(streamSocket, temp, sizeof(temp));
+    int received = NET_ReadFromStreamSocket(handler->streamSocket, temp, sizeof(temp));
     if (received > 0) {
       recvBuffer.insert(recvBuffer.end(), temp, temp + received);
     } else if (received < 0) {
       SDL_Log("Read error: %s", SDL_GetError());
-      streamSocket = nullptr;
-      recvBuffer.clear();
-      SDL_Delay(100);
-      continue;
+      break;
     }
 
-    // Process as many full framed messages as available in recvBuffer.
+    // Process as many full framed messages as available.
     while (recvBuffer.size() >= 4) {
       uint32_t msgLen;
       memcpy(&msgLen, recvBuffer.data(), 4);
 
       if (recvBuffer.size() < 4 + msgLen)
-        break;  // not enough bytes yet, wait for more reads
+        break;
 
       std::string jsonMsg(recvBuffer.begin() + 4,
-          recvBuffer.begin() + 4 + msgLen);
-      browserProcessHandler->incomingMessageQueue.push(jsonMsg);  // Worker thread will parse JSON
+                          recvBuffer.begin() + 4 + msgLen);
+      handler->incomingMessageQueue.push(jsonMsg);
 
       recvBuffer.erase(recvBuffer.begin(), recvBuffer.begin() + 4 + msgLen);
     }
+  }
+  return 0;
+}
 
-    std::string outMsg;
-    while (browserProcessHandler->outgoingMessageQueue.try_pop(outMsg)) {
-        uint32_t len = static_cast<uint32_t>(outMsg.size());
-        // Build single contiguous buffer: [len(4 bytes)] [payload]
-        std::vector<uint8_t> sendBuf;
-        sendBuf.resize(4 + outMsg.size());
-        memcpy(sendBuf.data(), &len, 4);
-        if (!outMsg.empty()) {
-          memcpy(sendBuf.data() + 4, outMsg.data(), outMsg.size());
-        }
+int BrowserProcessHandler::RpcSendThread(void* browserProcessHandlerPtr) {
+  CefRefPtr<BrowserProcessHandler> handler =
+      base::WrapRefCounted<BrowserProcessHandler>(static_cast<BrowserProcessHandler*>(browserProcessHandlerPtr));
 
-        int total = static_cast<int>(sendBuf.size());
-        if (!NET_WriteToStreamSocket(streamSocket, sendBuf.data(), total)) {
-          SDL_Log("NET_WriteToStreamSocket failed or connection closed: %s", SDL_GetError());
-          NET_DestroyStreamSocket(streamSocket);
-          streamSocket = nullptr;
-          break;
-        }
-        HWND applicationMessageWindowHandle = browserProcessHandler
-            ->GetApplicationMessageWindowHandle();
-        int windowMessageId = browserProcessHandler->GetWindowMessageId();
-        NET_WaitUntilStreamSocketDrained(streamSocket, -1);
-        PostMessageW(applicationMessageWindowHandle, windowMessageId, 0, 0);
+  SDL_Log("Send thread running");
+
+  while (true) {
+    // Block until an outgoing message is available.
+    std::string outMsg = handler->outgoingMessageQueue.pop();
+
+    uint32_t len = static_cast<uint32_t>(outMsg.size());
+    std::vector<uint8_t> sendBuf;
+    sendBuf.resize(4 + outMsg.size());
+    memcpy(sendBuf.data(), &len, 4);
+    if (!outMsg.empty()) {
+      memcpy(sendBuf.data() + 4, outMsg.data(), outMsg.size());
     }
-    SDL_Delay(1);  // tiny yield
+
+    int total = static_cast<int>(sendBuf.size());
+    if (!NET_WriteToStreamSocket(handler->streamSocket, sendBuf.data(), total)) {
+      SDL_Log("NET_WriteToStreamSocket failed or connection closed: %s",
+              SDL_GetError());
+      break;
+    }
+    NET_WaitUntilStreamSocketDrained(handler->streamSocket, -1);
+    PostMessageW(handler->applicationMessageWindowHandle, handler->windowMessageId, 0, 0);
   }
   return 0;
 }
