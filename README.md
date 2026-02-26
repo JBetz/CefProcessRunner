@@ -1,4 +1,4 @@
-The [Chromium Embedded Framework](https://bitbucket.org/chromiumembedded/cef/) (CEF) is a simple framework for embedding Chromium-based browsers in other applications. This repository hosts a sample project called "cef-project" that can be used as the starting point for third-party applications built using CEF.
+This project provides a way to run CEF out-of-process and communicate with it using a language-agnostic JSON-RPC.
 
 # Quick Links
 
