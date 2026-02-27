@@ -87,6 +87,11 @@ inline void to_json(json& j, const CefPoint& m) {
   j["y"] = m.y;
 }
 
+inline void from_json(const json& j, CefPoint& m) {
+  j.at("x").get_to(m.x);
+  j.at("y").get_to(m.y);
+}
+
 inline void to_json(json& j, const CefSize& m) {
   j = json::object();
   j["width"] = m.width;
@@ -635,4 +640,13 @@ inline void to_json(json& j, const Browser_OnLoadError& m) {
   j["errorCode"] = m.errorCode;
   j["errorText"] = m.errorText;
   j["failedUrl"] = m.failedUrl;
+}
+
+struct Browser_GetScreenPoint {
+  CefPoint view;
+};
+
+inline void to_json(json& j, const Browser_GetScreenPoint& m) {
+  j = json::object();
+  j["view"] = m.view;
 }

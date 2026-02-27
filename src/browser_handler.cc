@@ -162,7 +162,22 @@ bool BrowserHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser_,
                                     int viewY,
                                     int& screenX,
                                     int& screenY) {
-  return false;
+  Browser_GetScreenPoint arguments;
+  arguments.view = CefPoint(viewX, viewY);
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId =
+      this->SendRpcRequest("GetScreenPoint", jsonArguments);
+  if (!requestId.has_value()) {
+    return false;
+  }
+  std::optional<CefPoint> result = browserProcessHandler->WaitForResponse<CefPoint>(requestId.value());
+  if (!result.has_value()) {
+    return false;
+  }
+  CefPoint screen = result.value();
+  screenX = screen.x;
+  screenY = screen.y;
+  return true;
 }
 
 void BrowserHandler::OnPopupShow(CefRefPtr<CefBrowser> browser_, bool show) {

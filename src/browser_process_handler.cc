@@ -721,3 +721,4 @@ template bool BrowserProcessHandler::WaitForResponse<bool>(UUID);
 template CefRect BrowserProcessHandler::WaitForResponse<CefRect>(UUID);
 template ContextMenuConfiguration
     BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);
+template CefPoint BrowserProcessHandler::WaitForResponse<CefPoint>(UUID);
