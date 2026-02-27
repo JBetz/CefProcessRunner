@@ -362,6 +362,24 @@ bool BrowserHandler::RunContextMenu(
   return false;
 }
 
+bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser_,
+                                         CefRefPtr<CefFrame> frame,
+                                         CefRefPtr<CefContextMenuParams> params,
+                                         int commandId,
+                                         cef_event_flags_t eventFlags) {
+  Browser_OnContextMenuCommand arguments;
+  arguments.commandId = commandId;
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId =
+      this->SendRpcRequest("OnContextMenuCommand", jsonArguments);
+  if (!requestId.has_value()) {
+    return false;
+  }
+  std::optional<bool> result =
+      browserProcessHandler->WaitForResponse<bool>(requestId.value());
+  return result.value_or(false);
+}
+
 void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser_,
                                           bool isLoading,
                                           bool canGoBack,

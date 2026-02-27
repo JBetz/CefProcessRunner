@@ -650,3 +650,14 @@ inline void to_json(json& j, const Browser_GetScreenPoint& m) {
   j = json::object();
   j["view"] = m.view;
 }
+
+struct Browser_OnContextMenuCommand {
+  int commandId;
+  int eventFlags;
+};
+
+inline void to_json(json& j, const Browser_OnContextMenuCommand& m) {
+  j = json::object();
+  j["commandId"] = m.commandId;
+  j["eventFlags"] = m.eventFlags;
+}

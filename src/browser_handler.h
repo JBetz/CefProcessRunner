@@ -121,6 +121,11 @@ class BrowserHandler : public CefClient,
                       CefRefPtr<CefContextMenuParams> params,
                       CefRefPtr<CefMenuModel> model,
                       CefRefPtr<CefRunContextMenuCallback> callback) override;
+  bool OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
+                            CefRefPtr<CefFrame> frame,
+                            CefRefPtr<CefContextMenuParams> params,
+                            int command_id,
+                            cef_event_flags_t event_flags) override;
 
   // CefLoadHandler:
   void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
