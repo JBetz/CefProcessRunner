@@ -162,12 +162,14 @@ struct Client_CreateBrowser {
   std::string url;
   CefRect rectangle;
   std::optional<std::string> html;
+  uintptr_t parentWindowHandle;
 };
 
 inline void from_json(const json& j, Client_CreateBrowser& m) {
   j.at("url").get_to(m.url);
   j.at("rectangle").get_to(m.rectangle);
   j.at("html").get_to(m.html);
+  j.at("parentWindowHandle").get_to(m.parentWindowHandle);
 }
 
 struct Browser_EvalJavaScript {
@@ -358,6 +360,14 @@ inline void from_json(const json& j, Browser_LoadUrl& m) {
   j.at("url").get_to(m.url);
 }
 
+struct Browser_SetFrameRate {
+  int frameRate;
+};
+
+inline void from_json(const json& j, Browser_SetFrameRate& m) {
+  j.at("frameRate").get_to(m.frameRate);
+}
+
 struct Browser_OnAcceleratedPaint {
   int elementType;
   uintptr_t sharedTextureHandle;
@@ -485,6 +495,26 @@ inline void to_json(json& j, const Browser_OnBeforeContextMenu& m) {
   j["nodeMediaStateFlags"] = m.nodeMediaStateFlags;
   j["nodeEditFlags"] = m.nodeEditFlags;
   j["selectionText"] = m.selectionText;
+}
+
+struct ContextMenuCommand {
+  int index;
+  int commandId;
+  std::string label;
+};
+
+inline void from_json(const json& j, ContextMenuCommand& m) {
+  j.at("index").get_to(m.index);
+  j.at("commandId").get_to(m.commandId);
+  j.at("label").get_to(m.label);
+}
+
+struct ContextMenuConfiguration {
+  std::vector<ContextMenuCommand> commands;
+};
+
+inline void from_json(const json& j, ContextMenuConfiguration& m) {
+  j.at("commands").get_to(m.commands);
 }
 
 struct Browser_OnPopupShow {

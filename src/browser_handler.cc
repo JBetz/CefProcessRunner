@@ -320,7 +320,22 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
   arguments.nodeEditFlags = static_cast<int>(params->GetEditStateFlags());
   arguments.selectionText = params->GetSelectionText().ToString();
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
+  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
+  if (!requestId.has_value()) {
+    return;
+  }
+  std::optional<ContextMenuConfiguration> result =
+      browserProcessHandler->WaitForResponse<ContextMenuConfiguration>(
+          requestId.value());
+  if (!result.has_value()) {
+    return;
+  }
+  model->Clear();
+  ContextMenuConfiguration config = result.value();
+  for (const auto& command : config.commands) {
+      SDL_Log(command.label.c_str());
+      model->InsertItemAt(command.index, command.commandId, command.label);
+  }
 }
 
 bool BrowserHandler::RunContextMenu(
@@ -329,8 +344,7 @@ bool BrowserHandler::RunContextMenu(
     CefRefPtr<CefContextMenuParams> params,
     CefRefPtr<CefMenuModel> model,
     CefRefPtr<CefRunContextMenuCallback> callback) {
-  callback->Cancel();
-  return true;
+  return false;
 }
 
 void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser_,

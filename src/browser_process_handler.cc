@@ -232,9 +232,10 @@ void BrowserProcessHandler::OnContextInitialized() {
 
 void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId,
                                                     const CefString& url,
-                                                    const CefRect& rectangle) {
+                                                    const CefRect& rectangle,
+                                                    HWND parentWindowHandle) {
   CefWindowInfo windowInfo;
-  windowInfo.SetAsWindowless(nullptr);  // no OS parent
+  windowInfo.SetAsWindowless(parentWindowHandle);  // no OS parent
   windowInfo.windowless_rendering_enabled = true;
   windowInfo.shared_texture_enabled = true;
   windowInfo.bounds = rectangle;
@@ -301,6 +302,18 @@ void BrowserProcessHandler::Browser_TryCloseRpc(
   this->SendMessage(jsonResponse.dump());
 }
 
+void BrowserProcessHandler::Browser_GetFrameRateRpc(
+    const CefRefPtr<CefBrowser> browser,
+     const UUID& requestId) {
+  int frameRate = browser->GetHost()->GetWindowlessFrameRate();
+  RpcResponse response;
+  response.requestId = requestId;
+  response.success = true;
+  response.returnValue = frameRate;
+  json jsonResponse = response;
+  this->SendMessage(jsonResponse.dump());
+}
+
 void BrowserProcessHandler::SendMessage(std::string payload) {
   outgoingMessageQueue.push(payload);
 }
@@ -320,10 +333,12 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
     if (request.methodName == "CreateBrowser") {
       Client_CreateBrowser arguments =
           request.arguments.get<Client_CreateBrowser>();
+      HWND parentWindowHandle =
+          reinterpret_cast<HWND>(arguments.parentWindowHandle);
       CefPostTask(
           TID_UI,
           base::BindOnce(&BrowserProcessHandler::Client_CreateBrowserRpc, this,
-                         request.id, arguments.url, arguments.rectangle));
+                         request.id, arguments.url, arguments.rectangle, parentWindowHandle));
       return;
     }
 
@@ -523,6 +538,20 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
       frame->GetSource(visitor);
       return;
     }
+
+    if (request.methodName == "GetFrameRate") {
+      CefPostTask(TID_UI,
+                  base::BindOnce(&BrowserProcessHandler::Browser_GetFrameRateRpc,
+                                 this, browser, request.id));
+      return;
+    }
+
+    if (request.methodName == "SetFrameRate") {
+        Browser_SetFrameRate arguments =
+          request.arguments.get<Browser_SetFrameRate>();
+        browser->GetHost()->SetWindowlessFrameRate(arguments.frameRate);
+        return;
+    }
   }
 
   SDL_Log("RpcWorkerThread: unknown message method '%s'",
@@ -690,3 +719,5 @@ template std::monostate BrowserProcessHandler::WaitForResponse<std::monostate>(
     UUID);
 template bool BrowserProcessHandler::WaitForResponse<bool>(UUID);
 template CefRect BrowserProcessHandler::WaitForResponse<CefRect>(UUID);
+template ContextMenuConfiguration
+    BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);

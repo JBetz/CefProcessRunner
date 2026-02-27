@@ -32,10 +32,11 @@ public:
   void HandleRpcResponse(RpcResponse response);
 
   // Incoming RPC messages.
-  void Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle);
+  void Client_CreateBrowserRpc(const UUID& requestId, const CefString& url, const CefRect& rectangle, HWND parentWindowHandle);
   void Client_ShutdownRpc();
   void Browser_CloseRpc(const CefRefPtr<CefBrowser> browser, bool forceClose);
   void Browser_TryCloseRpc(const CefRefPtr<CefBrowser> browser, const UUID& requestId);
+  void Browser_GetFrameRateRpc(const CefRefPtr<CefBrowser> browser, const UUID& requestId);
   
   // Outgoing RPC messages.
   void SendMessage(std::string payload);
@@ -48,6 +49,7 @@ public:
 
  private:
   HANDLE applicationProcessHandle;
+  HWND applicationWindowHandle;
   HWND applicationMessageWindowHandle;
   int windowMessageId;
   ThreadSafeQueue<std::string> outgoingMessageQueue;
