@@ -84,6 +84,7 @@ class BrowserHandler : public CefClient,
                       CefCursorHandle cursor,
                       cef_cursor_type_t type,
                       const CefCursorInfo& custom_cursor_info) override;
+  bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
 
   // CefLifeSpanHandler:
   bool OnBeforePopup(

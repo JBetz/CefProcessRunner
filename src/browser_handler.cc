@@ -432,3 +432,12 @@ void BrowserHandler::OnLoadError(CefRefPtr<CefBrowser> browser_,
   json jsonArguments = arguments;
   this->SendRpcRequest("OnLoadError", jsonArguments);
 }
+
+bool BrowserHandler::OnTooltip(CefRefPtr<CefBrowser> browser_,
+                               CefString& text) {
+  Browser_OnTooltip arguments;
+  arguments.text = text.ToString();
+  json jsonArguments = arguments;
+  this->SendRpcRequest("OnTooltip", jsonArguments);
+  return true;
+}

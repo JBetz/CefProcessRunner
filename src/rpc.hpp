@@ -661,3 +661,12 @@ inline void to_json(json& j, const Browser_OnContextMenuCommand& m) {
   j["commandId"] = m.commandId;
   j["eventFlags"] = m.eventFlags;
 }
+
+struct Browser_OnTooltip {
+  std::string text;
+};
+
+inline void to_json(json& j, const Browser_OnTooltip& m) {
+  j = json::object();
+  j["text"] = m.text;
+}
