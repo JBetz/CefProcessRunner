@@ -148,16 +148,6 @@ inline void to_json(json& j, const RpcRequest& m) {
 }
 
 // Response messages
-struct Client_Initialize {
-  int clientProcessId;
-  uintptr_t clientMessageWindowHandle;
-};
-
-inline void from_json(const json& j, Client_Initialize& m) {
-  j.at("clientProcessId").get_to(m.clientProcessId);
-  j.at("clientMessageWindowHandle").get_to(m.clientMessageWindowHandle);
-}
-
 struct Client_CreateBrowser {
   std::string url;
   CefRect rectangle;
