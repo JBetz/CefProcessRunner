@@ -360,6 +360,7 @@ class PromiseThenHandler : public CefV8Handler {
         CefDictionaryValue::Create();
     RpcResponse response;
     response.requestId = messageId;
+    response.success = true;
     response.returnValue = result.ToString();
     json jsonResponse = response;
     responseMessage->GetArgumentList()->SetString(0, jsonResponse.dump());
