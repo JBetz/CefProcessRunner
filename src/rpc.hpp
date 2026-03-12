@@ -158,6 +158,7 @@ struct Client_CreateBrowser {
   CefRect rectangle;
   std::optional<std::string> html;
   uintptr_t parentWindowHandle;
+  bool hardwareAccelerated;
 };
 
 inline void from_json(const json& j, Client_CreateBrowser& m) {
@@ -165,6 +166,7 @@ inline void from_json(const json& j, Client_CreateBrowser& m) {
   j.at("rectangle").get_to(m.rectangle);
   j.at("html").get_to(m.html);
   j.at("parentWindowHandle").get_to(m.parentWindowHandle);
+  j.at("hardwareAccelerated").get_to(m.hardwareAccelerated);
 }
 
 struct Browser_EvalJavaScript {
@@ -669,4 +671,23 @@ struct Browser_OnTooltip {
 inline void to_json(json& j, const Browser_OnTooltip& m) {
   j = json::object();
   j["text"] = m.text;
+}
+
+struct Browser_OnPaint {
+  int elementType;
+  int width;
+  int height;
+  std::vector<CefRect> dirtyRects;
+  uintptr_t sharedMemoryHandle;
+  int sharedMemorySize;
+};
+
+inline void to_json(json& j, const Browser_OnPaint& m) {
+  j = json::object();
+  j["elementType"] = m.elementType;
+  j["width"] = m.width;
+  j["height"] = m.height;
+  j["dirtyRects"] = m.dirtyRects;
+  j["sharedMemoryHandle"] = m.sharedMemoryHandle;
+  j["sharedMemorySize"] = m.sharedMemorySize;
 }

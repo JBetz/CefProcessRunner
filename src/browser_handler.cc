@@ -106,12 +106,52 @@ void BrowserHandler::OnPaint(CefRefPtr<CefBrowser> browser_,
                              const void* buffer,
                              int width,
                              int height) {
-  SDL_Log(
-      "WARNING: BrowserHandler::OnPaint() was called, which means that this "
-      "browser (id: %d) was set up incorrectly, or your machine does not have "
-      "a "
-      "GPU compatible with Chromium's hardware-accelerated rendering.",
-      browser_->GetIdentifier());
+  int bufferSize = width * height * 4;
+  HANDLE fileMapping = CreateFileMappingW(
+      INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, bufferSize, NULL);
+  if (fileMapping == NULL) {
+    SDL_Log("Error creating file mapping for OnPaint buffer");
+    return;
+  }
+  void* mappedView =
+      MapViewOfFile(fileMapping, FILE_MAP_WRITE, 0, 0, bufferSize);
+  if (mappedView == NULL) {
+    SDL_Log("Error mapping view of file for OnPaint buffer");
+    CloseHandle(fileMapping);
+    return;
+  }
+  memcpy(mappedView, buffer, bufferSize);
+  UnmapViewOfFile(mappedView);
+
+  HANDLE applicationProcessHandle =
+      browserProcessHandler->GetApplicationProcessHandle();
+  HANDLE duplicateHandle = NULL;
+  if (!DuplicateHandle(GetCurrentProcess(), fileMapping,
+                       applicationProcessHandle, &duplicateHandle, 0, FALSE,
+                       DUPLICATE_SAME_ACCESS)) {
+    SDL_Log("Error duplicating file mapping handle: DuplicateHandle() call failed");
+    CloseHandle(fileMapping);
+    return;
+  }
+
+  Browser_OnPaint arguments;
+  arguments.elementType = type;
+  arguments.width = width;
+  arguments.height = height;
+  arguments.sharedMemoryHandle = reinterpret_cast<uintptr_t>(duplicateHandle);
+  arguments.sharedMemorySize = bufferSize;
+  for (const auto& rect : dirtyRects) {
+    arguments.dirtyRects.push_back(rect);
+  }
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId =
+      this->SendRpcRequest("OnPaint", jsonArguments);
+  if (!requestId.has_value()) {
+    CloseHandle(fileMapping);
+    return;
+  }
+  browserProcessHandler->WaitForResponse<std::monostate>(requestId.value());
+  CloseHandle(fileMapping);
 }
 
 void BrowserHandler::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser_,
