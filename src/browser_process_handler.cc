@@ -234,11 +234,15 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId,
                                                     const CefString& url,
                                                     const CefRect& rectangle,
                                                     HWND parentWindowHandle,
+                                                    bool windowless,
                                                     bool hardwareAccelerated) {
   CefWindowInfo windowInfo;
-  windowInfo.SetAsWindowless(parentWindowHandle);  // no OS parent
-  windowInfo.windowless_rendering_enabled = true;
-  windowInfo.shared_texture_enabled = hardwareAccelerated;
+  if (windowless) {
+    windowInfo.SetAsWindowless(parentWindowHandle);  // no OS parent 
+    windowInfo.shared_texture_enabled = hardwareAccelerated;
+  } else {
+    windowInfo.SetAsChild(parentWindowHandle, rectangle);
+  }
   windowInfo.bounds = rectangle;
 
   CefBrowserSettings browserSettings;
@@ -339,7 +343,7 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
       CefPostTask(
           TID_UI,
           base::BindOnce(&BrowserProcessHandler::Client_CreateBrowserRpc, this,
-                         request.id, arguments.url, arguments.rectangle, parentWindowHandle, arguments.hardwareAccelerated));
+                         request.id, arguments.url, arguments.rectangle, parentWindowHandle, arguments.windowless, arguments.hardwareAccelerated));
       return;
     }
 

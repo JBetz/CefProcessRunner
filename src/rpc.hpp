@@ -158,6 +158,7 @@ struct Client_CreateBrowser {
   CefRect rectangle;
   std::optional<std::string> html;
   uintptr_t parentWindowHandle;
+  bool windowless;
   bool hardwareAccelerated;
 };
 
@@ -166,6 +167,7 @@ inline void from_json(const json& j, Client_CreateBrowser& m) {
   j.at("rectangle").get_to(m.rectangle);
   j.at("html").get_to(m.html);
   j.at("parentWindowHandle").get_to(m.parentWindowHandle);
+  j.at("windowless").get_to(m.windowless);
   j.at("hardwareAccelerated").get_to(m.hardwareAccelerated);
 }
 
