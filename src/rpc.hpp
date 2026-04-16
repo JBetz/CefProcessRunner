@@ -227,40 +227,6 @@ inline void from_json(const json& j, Browser_OnKeyboardEvent& m) {
   j.at("event").get_to(m.event);
 }
 
-struct NavigateDestination {
-  std::string id;
-  int index;
-  std::string key;
-  bool sameDocument;
-  std::string url;
-};
-
-inline void to_json(json& j, const NavigateDestination& m) {
-  j = json::object();
-  j["id"] = m.id;
-  j["index"] = m.index;
-  j["key"] = m.key;
-  j["sameDocument"] = m.sameDocument;
-  j["url"] = m.url;
-}
-
-struct Browser_OnNavigate {
-  NavigateDestination destination;
-  std::optional<std::map<std::string, std::string>> formData;
-  bool hashChange;
-  std::string navigationType;
-  bool userInitiated;
-};
-
-inline void to_json(json& j, const Browser_OnNavigate& m) {
-  j = json::object();
-  j["destination"] = m.destination;
-  j["formData"] = m.formData;
-  j["hashChange"] = m.hashChange;
-  j["navigationType"] = m.navigationType;
-  j["userInitiated"] = m.userInitiated;
-}
-
 struct Browser_OnMouseOver {
   std::string tagName;
   std::optional<std::string> inputType;
@@ -715,4 +681,79 @@ inline void to_json(json& j, const Browser_OnBeforeBrowse& m) {
   j["isRedirect"] = m.isRedirect;
   j["transitionType"] = m.transitionType;
   j["resourceType"] = m.resourceType;
+}
+
+struct Browser_OnHistoryPushState {
+  std::string url;
+  std::string state;
+};
+
+inline void to_json(json& j, const Browser_OnHistoryPushState& m) {
+  j = json::object();
+  j["url"] = m.url;
+  j["state"] = m.state;
+}
+
+struct Browser_OnHistoryReplaceState {
+  std::string url;
+  std::string state;
+};
+
+inline void to_json(json& j, const Browser_OnHistoryReplaceState& m) {
+  j = json::object();
+  j["url"] = m.url;
+  j["state"] = m.state;
+}
+
+struct Browser_OnHistoryGo {
+  int delta;
+};
+
+inline void to_json(json& j, const Browser_OnHistoryGo& m) {
+  j = json::object();
+  j["delta"] = m.delta;
+}
+
+struct Browser_OnNavigationNavigate {
+  std::string url;
+  std::string state;
+  std::string info;
+  std::string history;
+};
+
+inline void to_json(json& j, const Browser_OnNavigationNavigate& m) {
+  j = json::object();
+  j["url"] = m.url;
+  j["state"] = m.state;
+  j["info"] = m.info;
+  j["history"] = m.history;
+}
+
+struct Browser_OnNavigationTraverseTo {
+  std::string key;
+  std::string info;
+};
+
+inline void to_json(json& j, const Browser_OnNavigationTraverseTo& m) {
+  j = json::object();
+  j["key"] = m.key;
+  j["info"] = m.info;
+}
+
+struct Browser_OnNavigationBack {
+  std::string info;
+};
+
+inline void to_json(json& j, const Browser_OnNavigationBack& m) {
+  j = json::object();
+  j["info"] = m.info;
+}
+
+struct Browser_OnNavigationForward {
+  std::string info;
+};
+
+inline void to_json(json& j, const Browser_OnNavigationForward& m) {
+  j = json::object();
+  j["info"] = m.info;
 }

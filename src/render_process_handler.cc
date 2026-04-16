@@ -19,7 +19,8 @@ using json = nlohmann::json;
 const char kOnFocusMessage[] = "RenderProcessHandler.OnFocus";
 const char kOnFocusOutMessage[] = "RenderProcessHandler.OnFocusOut";
 const char kOnMouseOverMessage[] = "RenderProcessHandler.OnMouseOver";
-const char kOnNavigateMessage[] = "RenderProcessHandler.OnNavigate";
+const char kOnHistoryMessage[] = "RenderProcessHandler.OnHistory";
+const char kOnNavigationMessage[] = "RenderProcessHandler.OnNavigation";
 const char kOnMessageMessage[] = "RenderProcessHandler.OnMessage";
 const char kOnEvalMessage[] = "RenderProcessHandler.OnEval";
 
@@ -154,9 +155,9 @@ class MessageHandler : public CefV8Handler {
   IMPLEMENT_REFCOUNTING(MessageHandler);
 };
 
-class NavigateHandler : public CefV8Handler {
+class HistoryHandler : public CefV8Handler {
  public:
-  NavigateHandler() {}
+  HistoryHandler() {}
 
   virtual bool Execute(const CefString& name,
                        CefRefPtr<CefV8Value> object,
@@ -165,44 +166,98 @@ class NavigateHandler : public CefV8Handler {
                        CefString& exception) override {
     CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
     CefRefPtr<CefFrame> frame = context->GetFrame();
-    CefRefPtr<CefV8Value> event = arguments.front();
 
     RpcRequest request;
     request.id = CreateUuid();
     request.className = "Browser";
-    request.methodName = "OnNavigate";
     request.instanceId = frame->GetBrowser()->GetIdentifier();
-    Browser_OnNavigate navigateArguments;
-    navigateArguments.destination.id =
-        event->GetValue("destination")->GetValue("id")->GetStringValue();
-    navigateArguments.destination.url =
-        event->GetValue("destination")->GetValue("url")->GetStringValue();
-    navigateArguments.destination.index =
-        event->GetValue("destination")->GetValue("index")->GetIntValue();
-    navigateArguments.destination.key =
-        event->GetValue("destination")->GetValue("key")->GetStringValue();
-    navigateArguments.destination.sameDocument = event->GetValue("destination")
-                                                     ->GetValue("sameDocument")
-                                                     ->GetBoolValue();
-    navigateArguments.formData = std::nullopt;  // TODO: Populate form data
-    navigateArguments.hashChange =
-        event->GetValue("hashChange")->GetBoolValue();
-    navigateArguments.navigationType =
-        event->GetValue("navigationType")->GetStringValue();
-    navigateArguments.userInitiated =
-        event->GetValue("userInitiated")->GetBoolValue();
 
-    request.arguments = navigateArguments;
+    if (name == "onHistoryPushState") {
+      request.methodName = "OnHistoryPushState";
+      Browser_OnHistoryPushState args;
+      args.url = arguments[0]->GetStringValue().ToString();
+      args.state = arguments[1]->GetStringValue().ToString();
+      request.arguments = args;
+    } else if (name == "onHistoryReplaceState") {
+      request.methodName = "OnHistoryReplaceState";
+      Browser_OnHistoryReplaceState args;
+      args.url = arguments[0]->GetStringValue().ToString();
+      args.state = arguments[1]->GetStringValue().ToString();
+      request.arguments = args;
+    } else if (name == "onHistoryGo") {
+      request.methodName = "OnHistoryGo";
+      Browser_OnHistoryGo args;
+      args.delta = arguments[0]->GetIntValue();
+      request.arguments = args;
+    } else {
+      return false;
+    }
+
     json jsonRequest = request;
     CefRefPtr<CefProcessMessage> message =
-        CefProcessMessage::Create(kOnNavigateMessage);
+        CefProcessMessage::Create(kOnHistoryMessage);
     message->GetArgumentList()->SetString(0, jsonRequest.dump());
     frame->SendProcessMessage(PID_BROWSER, message);
     return true;
   }
 
-  // Provide the reference counting implementation for this class.
-  IMPLEMENT_REFCOUNTING(NavigateHandler);
+  IMPLEMENT_REFCOUNTING(HistoryHandler);
+};
+
+class NavigationHandler : public CefV8Handler {
+ public:
+  NavigationHandler() {}
+
+  virtual bool Execute(const CefString& name,
+                       CefRefPtr<CefV8Value> object,
+                       const CefV8ValueList& arguments,
+                       CefRefPtr<CefV8Value>& retval,
+                       CefString& exception) override {
+    CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+    CefRefPtr<CefFrame> frame = context->GetFrame();
+
+    RpcRequest request;
+    request.id = CreateUuid();
+    request.className = "Browser";
+    request.instanceId = frame->GetBrowser()->GetIdentifier();
+
+    if (name == "onNavigationNavigate") {
+      request.methodName = "OnNavigationNavigate";
+      Browser_OnNavigationNavigate args;
+      args.url = arguments[0]->GetStringValue().ToString();
+      args.state = arguments[1]->GetStringValue().ToString();
+      args.info = arguments[2]->GetStringValue().ToString();
+      args.history = arguments[3]->GetStringValue().ToString();
+      request.arguments = args;
+    } else if (name == "onNavigationBack") {
+      request.methodName = "OnNavigationBack";
+      Browser_OnNavigationBack args;
+      args.info = arguments[0]->GetStringValue().ToString();
+      request.arguments = args;
+    } else if (name == "onNavigationForward") {
+      request.methodName = "OnNavigationForward";
+      Browser_OnNavigationForward args;
+      args.info = arguments[0]->GetStringValue().ToString();
+      request.arguments = args;
+    } else if (name == "onNavigationTraverseTo") {
+      request.methodName = "OnNavigationTraverseTo";
+      Browser_OnNavigationTraverseTo args;
+      args.key = arguments[0]->GetStringValue().ToString();
+      args.info = arguments[1]->GetStringValue().ToString();
+      request.arguments = args;
+    } else {
+      return false;
+    }
+
+    json jsonRequest = request;
+    CefRefPtr<CefProcessMessage> message =
+        CefProcessMessage::Create(kOnNavigationMessage);
+    message->GetArgumentList()->SetString(0, jsonRequest.dump());
+    frame->SendProcessMessage(PID_BROWSER, message);
+    return true;
+  }
+
+  IMPLEMENT_REFCOUNTING(NavigationHandler);
 };
 
 class FocusOutHandler : public CefV8Handler {
@@ -263,15 +318,111 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   window->GetValue("addEventListener")
       ->ExecuteFunction(window, mouseOverArguments);
 
-  // navigation
+  // history API shim
+  CefRefPtr<CefV8Handler> historyHandler = new HistoryHandler();
+  CefRefPtr<CefV8Value> onHistoryPushState =
+      CefV8Value::CreateFunction("onHistoryPushState", historyHandler);
+  CefRefPtr<CefV8Value> onHistoryReplaceState =
+      CefV8Value::CreateFunction("onHistoryReplaceState", historyHandler);
+  CefRefPtr<CefV8Value> onHistoryGo =
+      CefV8Value::CreateFunction("onHistoryGo", historyHandler);
+
+  std::string historyShimScript = R"(
+    (function(onHistoryPushState, onHistoryReplaceState, onHistoryGo) {
+      let _state = history.state;
+      Object.defineProperty(history, 'state', { get: () => _state });
+      Object.defineProperty(history, '_setState', {
+        value: function(state) { _state = state; },
+        enumerable: false
+      });
+      history.pushState = function(state, title, url) {
+        _state = state;
+        onHistoryPushState(String(url || ''), JSON.stringify(state));
+      };
+      history.replaceState = function(state, title, url) {
+        _state = state;
+        onHistoryReplaceState(String(url || ''), JSON.stringify(state));
+      };
+      history.back = function() { onHistoryGo(-1); };
+      history.forward = function() { onHistoryGo(1); };
+      history.go = function(delta) { onHistoryGo(delta || 0); };
+    })
+  )";
+
+  CefRefPtr<CefV8Value> historyShimFunction;
+  CefRefPtr<CefV8Exception> historyShimException;
+  bool historyShimSuccess =
+      context->Eval(CefString(historyShimScript), CefString(""), 0,
+                    historyShimFunction, historyShimException);
+  if (historyShimSuccess && historyShimFunction->IsFunction()) {
+    CefV8ValueList historyShimArgs;
+    historyShimArgs.push_back(onHistoryPushState);
+    historyShimArgs.push_back(onHistoryReplaceState);
+    historyShimArgs.push_back(onHistoryGo);
+    historyShimFunction->ExecuteFunction(nullptr, historyShimArgs);
+  }
+
+  // navigation API shim
   CefRefPtr<CefV8Value> navigation = window->GetValue("navigation");
-  CefRefPtr<CefV8Handler> navigateHandler = new NavigateHandler();
-  CefV8ValueList navigateArguments;
-  navigateArguments.push_back(CefV8Value::CreateString("navigate"));
-  navigateArguments.push_back(
-      CefV8Value::CreateFunction("onNavigate", navigateHandler));
-  navigation->GetValue("addEventListener")
-      ->ExecuteFunction(navigation, navigateArguments);
+  if (navigation->IsObject()) {
+    CefRefPtr<CefV8Handler> navigationHandler = new NavigationHandler();
+    CefRefPtr<CefV8Value> onNavigationNavigate =
+        CefV8Value::CreateFunction("onNavigationNavigate", navigationHandler);
+    CefRefPtr<CefV8Value> onNavigationBack =
+        CefV8Value::CreateFunction("onNavigationBack", navigationHandler);
+    CefRefPtr<CefV8Value> onNavigationForward =
+        CefV8Value::CreateFunction("onNavigationForward", navigationHandler);
+    CefRefPtr<CefV8Value> onNavigationTraverseTo =
+        CefV8Value::CreateFunction("onNavigationTraverseTo", navigationHandler);
+
+    std::string navigationShimScript = R"(
+      (function(onNavigationNavigate, onNavigationBack, onNavigationForward, onNavigationTraverseTo) {
+        const resolved = { committed: Promise.resolve(), finished: Promise.resolve() };
+        navigation.navigate = function(url, options) {
+          var opts = options || {};
+          onNavigationNavigate(
+            String(url || ''),
+            JSON.stringify(opts.state === undefined ? null : opts.state),
+            JSON.stringify(opts.info === undefined ? null : opts.info),
+            opts.history || 'auto'
+          );
+          return resolved;
+        };
+        navigation.back = function(options) {
+          var opts = options || {};
+          onNavigationBack(JSON.stringify(opts.info === undefined ? null : opts.info));
+          return resolved;
+        };
+        navigation.forward = function(options) {
+          var opts = options || {};
+          onNavigationForward(JSON.stringify(opts.info === undefined ? null : opts.info));
+          return resolved;
+        };
+        navigation.traverseTo = function(key, options) {
+          var opts = options || {};
+          onNavigationTraverseTo(
+            String(key || ''),
+            JSON.stringify(opts.info === undefined ? null : opts.info)
+          );
+          return resolved;
+        };
+      })
+    )";
+
+    CefRefPtr<CefV8Value> navigationShimFunction;
+    CefRefPtr<CefV8Exception> navigationShimException;
+    bool navigationShimSuccess =
+        context->Eval(CefString(navigationShimScript), CefString(""), 0,
+                      navigationShimFunction, navigationShimException);
+    if (navigationShimSuccess && navigationShimFunction->IsFunction()) {
+      CefV8ValueList navigationShimArgs;
+      navigationShimArgs.push_back(onNavigationNavigate);
+      navigationShimArgs.push_back(onNavigationBack);
+      navigationShimArgs.push_back(onNavigationForward);
+      navigationShimArgs.push_back(onNavigationTraverseTo);
+      navigationShimFunction->ExecuteFunction(nullptr, navigationShimArgs);
+    }
+  }
 
   // focus out
   CefRefPtr<CefV8Value> document = window->GetValue("document");
