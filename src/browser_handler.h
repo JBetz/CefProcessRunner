@@ -105,6 +105,12 @@ class BrowserHandler : public CefClient,
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // CefRequestHandler:
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       CefRefPtr<CefRequest> request,
+                      bool user_gesture,
+                      bool is_redirect) override;
+
   bool OnOpenURLFromTab(
       CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,

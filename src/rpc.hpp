@@ -693,3 +693,26 @@ inline void to_json(json& j, const Browser_OnPaint& m) {
   j["sharedMemoryHandle"] = m.sharedMemoryHandle;
   j["sharedMemorySize"] = m.sharedMemorySize;
 }
+
+struct Browser_OnBeforeBrowse {
+  std::string url;
+  std::string method;
+  std::string referrerUrl;
+  std::map<std::string, std::string> headers;
+  bool userGesture;
+  bool isRedirect;
+  int transitionType;
+  int resourceType;
+};
+
+inline void to_json(json& j, const Browser_OnBeforeBrowse& m) {
+  j = json::object();
+  j["url"] = m.url;
+  j["method"] = m.method;
+  j["referrerUrl"] = m.referrerUrl;
+  j["headers"] = m.headers;
+  j["userGesture"] = m.userGesture;
+  j["isRedirect"] = m.isRedirect;
+  j["transitionType"] = m.transitionType;
+  j["resourceType"] = m.resourceType;
+}

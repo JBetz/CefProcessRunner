@@ -341,6 +341,38 @@ bool BrowserHandler::OnBeforePopup(
   return result.value_or(true);
 }
 
+bool BrowserHandler::OnBeforeBrowse(
+    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefFrame> frame,
+    CefRefPtr<CefRequest> request,
+    bool user_gesture,
+    bool is_redirect) {
+  Browser_OnBeforeBrowse arguments;
+  arguments.url = request->GetURL().ToString();
+  arguments.method = request->GetMethod().ToString();
+  arguments.referrerUrl = request->GetReferrerURL().ToString();
+
+  CefRequest::HeaderMap headerMap;
+  request->GetHeaderMap(headerMap);
+  for (const auto& [key, value] : headerMap) {
+    arguments.headers[key.ToString()] = value.ToString();
+  }
+
+  arguments.userGesture = user_gesture;
+  arguments.isRedirect = is_redirect;
+  arguments.transitionType = static_cast<int>(request->GetTransitionType());
+  arguments.resourceType = static_cast<int>(request->GetResourceType());
+  json jsonArguments = arguments;
+  std::optional<UUID> requestId =
+      this->SendRpcRequest("OnBeforeBrowse", jsonArguments);
+  if (!requestId.has_value()) {
+    return true;
+  }
+  std::optional<bool> result =
+      browserProcessHandler->WaitForResponse<bool>(requestId.value());
+  return result.value_or(true);
+}
+
 bool BrowserHandler::OnOpenURLFromTab(
     CefRefPtr<CefBrowser> browser_,
     CefRefPtr<CefFrame> frame,
