@@ -27,15 +27,15 @@ std::optional<UUID> BrowserHandler::SendRpcRequest(
     std::string methodName,
     json arguments) {
   if (!createdAt.has_value()) {
-    SDL_Log(
-      "Attempted to send RPC request '%s' but browser has not been created yet",
-      methodName.c_str());
+    browserProcessHandler->SendLogMessage(SDL_LOG_PRIORITY_WARN,
+        "Attempted to send RPC request '" + methodName +
+        "' but browser has not been created yet");
     return std::nullopt;
   }
   if (destroyedAt.has_value()) {
-    SDL_Log(
-      "Attempted to send RPC request '%s' but browser has been destroyed",
-      methodName.c_str());
+    browserProcessHandler->SendLogMessage(SDL_LOG_PRIORITY_WARN,
+        "Attempted to send RPC request '" + methodName +
+        "' but browser has been destroyed");
     return std::nullopt;
   }
   RpcRequest request;

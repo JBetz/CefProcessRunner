@@ -326,6 +326,21 @@ void BrowserProcessHandler::SendErrorMessage(const UUID& requestId,
   this->SendMessage(jsonResponse.dump());
 }
 
+void BrowserProcessHandler::SendLogMessage(const SDL_LogPriority level,
+                                           const std::string& message) {
+  RpcRequest request;
+  request.id = CreateUuid();
+  request.className = "Client";
+  request.methodName = "OnLogMessage";
+  json args;
+  args["level"] = level;
+  args["message"] = message;
+  request.arguments = args;
+  json j = request;
+  this->SendMessage(j.dump());
+  SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, level, "%s", message.c_str());
+}
+
 void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
   if (request.className == "Client") {
     if (request.methodName == "CreateBrowser") {
@@ -575,7 +590,9 @@ std::optional<T> BrowserProcessHandler::WaitForResponse(UUID requestId) {
   } catch (const std::exception& e) {
     size_t previewLen = std::min<size_t>(payload.size(), 256);
     std::string preview = payload.substr(0, previewLen);
-    SDL_Log("WaitForResponse: %s payload='%s'", e.what(), preview.c_str());
+    std::string msg = std::string("WaitForResponse: ") + e.what() +
+                      " payload='" + preview + "'";
+    this->SendLogMessage(SDL_LOG_PRIORITY_ERROR, msg);
     return std::nullopt;
   }
 }
