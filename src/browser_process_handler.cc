@@ -316,7 +316,7 @@ void BrowserProcessHandler::SendMessage(std::string payload) {
   outgoingMessageQueue.push(payload);
 }
 
-void BrowserProcessHandler::SendErrorMessage(const UUID& requestId,
+void BrowserProcessHandler::SendErrorResponse(const UUID& requestId,
                                              std::string message) {
   RpcResponse response;
   response.requestId = requestId;

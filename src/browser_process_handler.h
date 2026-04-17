@@ -40,7 +40,7 @@ public:
   
   // Outgoing RPC messages.
   void SendMessage(std::string payload);
-  void SendErrorMessage(const UUID& requestId, std::string message);
+  void SendErrorResponse(const UUID& requestId, std::string message);
   void SendLogMessage(const SDL_LogPriority level, const std::string& message);
   template<typename T> std::optional<T> WaitForResponse(UUID id);
   
