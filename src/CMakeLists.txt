@@ -12,6 +12,8 @@ set(CEFPROCESSRUNNER_SRCS
   browser_handler.h
   browser_process_handler.cc
   browser_process_handler.h
+  # cached_resource_handler.cc  
+  # cached_resource_handler.h
   command_line_switches.cc
   command_line_switches.h
   guid_ext.hpp
@@ -21,6 +23,8 @@ set(CEFPROCESSRUNNER_SRCS
   process_handler.h
   render_process_handler.cc
   render_process_handler.h
+  # response_body_filter.cc
+  # response_body_filter.h
   rpc.hpp
   thread_safe_queue.hpp)
 set(CEFPROCESSRUNNER_SRCS_WINDOWS

@@ -351,13 +351,11 @@ bool BrowserHandler::OnBeforeBrowse(
   arguments.url = request->GetURL().ToString();
   arguments.method = request->GetMethod().ToString();
   arguments.referrerUrl = request->GetReferrerURL().ToString();
-
   CefRequest::HeaderMap headerMap;
   request->GetHeaderMap(headerMap);
   for (const auto& [key, value] : headerMap) {
     arguments.headers[key.ToString()] = value.ToString();
   }
-
   arguments.userGesture = user_gesture;
   arguments.isRedirect = is_redirect;
   arguments.transitionType = static_cast<int>(request->GetTransitionType());
@@ -366,11 +364,11 @@ bool BrowserHandler::OnBeforeBrowse(
   std::optional<UUID> requestId =
       this->SendRpcRequest("OnBeforeBrowse", jsonArguments);
   if (!requestId.has_value()) {
-    return true;
+    return false;
   }
   std::optional<bool> result =
       browserProcessHandler->WaitForResponse<bool>(requestId.value());
-  return result.value_or(true);
+  return result.value_or(false);
 }
 
 bool BrowserHandler::OnOpenURLFromTab(
