@@ -100,12 +100,15 @@ void BrowserHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
                                  CefRect& rect) {
   if (!createdAt.has_value()) {
     rect = initialPageRectangle;
+    return;
+  }
+  std::optional<UUID> requestId = this->SendRpcRequest(browser, "GetViewRect");
+  if (!requestId.has_value()) {
+    rect = initialPageRectangle;
   } else {
-    std::optional<UUID> requestId = this->SendRpcRequest(browser, "GetViewRect");
-    CefRect currentPageRectangle =
-        browserProcessHandler->BrowserProcessHandler::WaitForResponse<CefRect>(
-            requestId.value());
-    rect = currentPageRectangle;
+    std::optional<CefRect> result =
+        browserProcessHandler->WaitForResponse<CefRect>(requestId.value());
+    rect = result.value_or(initialPageRectangle);
   }
 }
 

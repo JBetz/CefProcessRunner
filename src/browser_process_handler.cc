@@ -541,7 +541,7 @@ void BrowserProcessHandler::HandleRpcResponse(RpcResponse response) {
 }
 
 template <typename T>
-T BrowserProcessHandler::WaitForResponse(UUID requestId) {
+std::optional<T> BrowserProcessHandler::WaitForResponse(UUID requestId) {
   std::unique_ptr<ResponseEntry> entry = std::make_unique<ResponseEntry>();
 
   // Insert into map under map mutex
@@ -572,18 +572,11 @@ T BrowserProcessHandler::WaitForResponse(UUID requestId) {
   try {
     json j = json::parse(payload);
     return j.get<T>();
-  } catch (const nlohmann::json::parse_error& e_parse) {
-    // Log parse error, location and a truncated payload preview (safe length)
+  } catch (const std::exception& e) {
     size_t previewLen = std::min<size_t>(payload.size(), 256);
     std::string preview = payload.substr(0, previewLen);
-    SDL_Log(
-        "WaitForResponse: JSON parse_error: %s at byte=%u payload_preview='%s'",
-        e_parse.what(), static_cast<unsigned int>(e_parse.byte),
-        preview.c_str());
-    throw;  // rethrow so caller can handle the failure
-  } catch (const std::exception& e) {
-    SDL_Log("WaitForResponse: JSON exception: %s", e.what());
-    throw;
+    SDL_Log("WaitForResponse: %s payload='%s'", e.what(), preview.c_str());
+    return std::nullopt;
   }
 }
 
@@ -683,10 +676,13 @@ int BrowserProcessHandler::RpcSendThread(void* browserProcessHandlerPtr) {
   return 0;
 }
 
-template std::monostate BrowserProcessHandler::WaitForResponse<std::monostate>(
-    UUID);
-template bool BrowserProcessHandler::WaitForResponse<bool>(UUID);
-template CefRect BrowserProcessHandler::WaitForResponse<CefRect>(UUID);
-template ContextMenuConfiguration
+template std::optional<std::monostate>
+    BrowserProcessHandler::WaitForResponse<std::monostate>(UUID);
+template std::optional<bool>
+    BrowserProcessHandler::WaitForResponse<bool>(UUID);
+template std::optional<CefRect>
+    BrowserProcessHandler::WaitForResponse<CefRect>(UUID);
+template std::optional<ContextMenuConfiguration>
     BrowserProcessHandler::WaitForResponse<ContextMenuConfiguration>(UUID);
-template CefPoint BrowserProcessHandler::WaitForResponse<CefPoint>(UUID);
+template std::optional<CefPoint>
+    BrowserProcessHandler::WaitForResponse<CefPoint>(UUID);

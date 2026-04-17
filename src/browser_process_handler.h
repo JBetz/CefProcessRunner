@@ -41,7 +41,7 @@ public:
   // Outgoing RPC messages.
   void SendMessage(std::string payload);
   void SendErrorMessage(const UUID& requestId, std::string message);
-  template<typename T> T WaitForResponse(UUID id);
+  template<typename T> std::optional<T> WaitForResponse(UUID id);
   
   // RPC threads, need to be static.
   static int RpcReceiveThread(void* browserProcessHandlerPtr);
