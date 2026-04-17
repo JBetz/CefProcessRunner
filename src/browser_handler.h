@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <chrono>
+#include <optional>
 #include <vector>
 
 #include "include/cef_client.h"
@@ -22,11 +24,14 @@ class BrowserHandler : public CefClient,
  public:
   BrowserHandler(BrowserProcessHandler* browserProcessHandler,
                  CefRect pageRectangle);
-
-  CefRefPtr<CefBrowser> GetBrowser();
-  void SetBrowser(CefRefPtr<CefBrowser> browser);
-  std::optional<UUID> SendRpcRequest(std::string methodName, json arguments);
-  std::optional<UUID> SendRpcRequest(std::string methodName);
+  
+  void MarkCreated();
+  void MarkDestroyed();
+  std::optional<UUID> SendRpcRequest(CefRefPtr<CefBrowser> browser_,
+                                     std::string methodName,
+                                     json arguments);
+  std::optional<UUID> SendRpcRequest(CefRefPtr<CefBrowser> browser_,
+                                     std::string methodName);
 
   // CefClient:
   CefRefPtr<CefRenderHandler> GetRenderHandler() override;
@@ -155,9 +160,12 @@ class BrowserHandler : public CefClient,
                    const CefString& failedUrl) override;
 
  private:
+  using TimePoint = std::chrono::steady_clock::time_point;
+
   BrowserProcessHandler* browserProcessHandler;
-  CefRefPtr<CefBrowser> browser;
   CefRect initialPageRectangle;
+  std::optional<TimePoint> createdAt;
+  std::optional<TimePoint> destroyedAt;
 
   IMPLEMENT_REFCOUNTING(BrowserHandler);
 };

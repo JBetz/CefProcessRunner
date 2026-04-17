@@ -109,7 +109,7 @@ BrowserProcessHandler::BrowserProcessHandler(
       outgoingMessageQueue(),
       responseMapMutex(SDL_CreateMutex()),
       socketServer(NULL),
-      browserHandlers(),
+      browserEntries(),
       isShuttingDown(false),
       streamSocket(nullptr) {}
 
@@ -123,31 +123,26 @@ NET_Server* BrowserProcessHandler::GetSocketServer() {
 }
 
 CefRefPtr<CefBrowser> BrowserProcessHandler::GetBrowser(int browserId) {
-  auto it = browserHandlers.find(browserId);
-  if (it != browserHandlers.end()) {
-    return it->second->GetBrowser();
+  auto it = browserEntries.find(browserId);
+  if (it != browserEntries.end()) {
+    return it->second.second;
   }
   return nullptr;
 }
 
 CefRefPtr<BrowserHandler> BrowserProcessHandler::GetBrowserHandler(
     int browserId) {
-  auto it = browserHandlers.find(browserId);
-  if (it != browserHandlers.end()) {
-    return it->second;
+  auto it = browserEntries.find(browserId);
+  if (it != browserEntries.end()) {
+    return it->second.first;
   }
   return nullptr;
 }
 
 void BrowserProcessHandler::RemoveBrowserHandler(int browserId) {
-  auto it = browserHandlers.find(browserId);
-  if (it != browserHandlers.end()) {
-    browserHandlers.erase(it);
-  }
+  browserEntries.erase(browserId);
 
-  // If we're in the middle of an explicit shutdown and there are no more
-  // browser handlers, finish the shutdown sequence.
-  if (isShuttingDown && browserHandlers.empty()) {
+  if (isShuttingDown && browserEntries.empty()) {
     CefPostTask(TID_UI, base::BindOnce([]() { CefQuitMessageLoop(); }));
   }
 }
@@ -257,12 +252,10 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId,
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(
       windowInfo, handler, url, browserSettings, extraInfo, requestContext);
 
-  handler->SetBrowser(browser);
-
   int browserId = -1;
   if (browser) {
     browserId = browser->GetIdentifier();
-    browserHandlers[browserId] = handler;
+    browserEntries[browserId] = {handler, browser};
     SDL_Log("Created browser on UI thread; id=%d url=%s", browserId,
             url.c_str());
     RpcResponse response;
@@ -271,6 +264,7 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId,
     response.returnValue = browserId;
     json j = response;
     this->SendMessage(j.dump());
+    handler->MarkCreated();
   } else {
     SDL_Log("CreateBrowserSync returned null");
   }
@@ -278,14 +272,13 @@ void BrowserProcessHandler::Client_CreateBrowserRpc(const UUID& requestId,
 
 void BrowserProcessHandler::Client_ShutdownRpc() {
   isShuttingDown = true;
-  if (browserHandlers.empty()) {
-    SDL_Log("No browser handlers during shutdown.");
+  if (browserEntries.empty()) {
+    SDL_Log("No browser entries during shutdown.");
     CefQuitMessageLoop();
   } else {
-    SDL_Log("%d browser handlers during shutdown.", browserHandlers.size());
-    for (const auto& pair : browserHandlers) {
-      CefRefPtr<CefBrowser> browser = pair.second->GetBrowser();
-      browser->GetHost()->CloseBrowser(true);
+    SDL_Log("%d browser entries during shutdown.", browserEntries.size());
+    for (const auto& [id, entry] : browserEntries) {
+      entry.second->GetHost()->CloseBrowser(true);
     }
   }
 }
@@ -364,7 +357,7 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
       this->SendErrorMessage(request.id, message);
       return;
     }
-    CefRefPtr<CefBrowser> browser = browserHandler->GetBrowser();
+    CefRefPtr<CefBrowser> browser = this->GetBrowser(request.instanceId);
     if (!browser) {
       std::string message = "Browser instance " +
                             std::to_string(request.instanceId) + " not found.";
@@ -381,36 +374,6 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
       frame->SendProcessMessage(PID_RENDERER, message);
       return;
     };
-
-    if (request.methodName == "CanGoBack") {
-      RpcResponse response;
-      response.requestId = request.id;
-      response.success = true;
-      response.returnValue = browser->CanGoBack();
-      json jsonResponse = response;
-      this->SendMessage(jsonResponse.dump());
-      return;
-    }
-
-    if (request.methodName == "CanGoForward") {
-      RpcResponse response;
-      response.requestId = request.id;
-      response.success = true;
-      response.returnValue = browser->CanGoForward();
-      json jsonResponse = response;
-      this->SendMessage(jsonResponse.dump());
-      return;
-    }
-
-    if (request.methodName == "Back") {
-      browser->GoBack();
-      return;
-    }
-
-    if (request.methodName == "Forward") {
-      browser->GoForward();
-      return;
-    }
 
     if (request.methodName == "Reload") {
       browser->Reload();
@@ -437,7 +400,7 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
     }
 
     if (request.methodName == "WasResized") {
-      browserHandler->GetBrowser()->GetHost()->WasResized();
+      browser->GetHost()->WasResized();
       return;
     }
 

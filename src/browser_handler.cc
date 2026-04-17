@@ -14,36 +14,45 @@ BrowserHandler::BrowserHandler(BrowserProcessHandler* browserProcessHandler,
     : browserProcessHandler(browserProcessHandler),
       initialPageRectangle(initialPageRectangle) {}
 
-CefRefPtr<CefBrowser> BrowserHandler::GetBrowser() {
-  return this->browser;
+void BrowserHandler::MarkCreated() {
+  this->createdAt = std::chrono::steady_clock::now();
 }
 
-void BrowserHandler::SetBrowser(CefRefPtr<CefBrowser> browser_) {
-  this->browser = browser_;
+void BrowserHandler::MarkDestroyed() {
+  this->destroyedAt = std::chrono::steady_clock::now();
 }
 
-std::optional<UUID> BrowserHandler::SendRpcRequest(std::string methodName,
-                                                   json arguments) {
-  if (this->browser == nullptr) {
+std::optional<UUID> BrowserHandler::SendRpcRequest(
+    CefRefPtr<CefBrowser> browser,
+    std::string methodName,
+    json arguments) {
+  if (!createdAt.has_value()) {
     SDL_Log(
-        "WARNING: Attempted to send RPC request '%s' but browser is not "
-        "available yet or has already been destroyed.",
-        methodName.c_str());
+      "Attempted to send RPC request '%s' but browser has not been created yet",
+      methodName.c_str());
+    return std::nullopt;
+  }
+  if (destroyedAt.has_value()) {
+    SDL_Log(
+      "Attempted to send RPC request '%s' but browser has been destroyed",
+      methodName.c_str());
     return std::nullopt;
   }
   RpcRequest request;
   request.id = CreateUuid();
   request.className = "Browser";
   request.methodName = methodName;
-  request.instanceId = this->browser->GetIdentifier();
+  request.instanceId = browser->GetIdentifier();
   request.arguments = arguments;
   json jsonRequest = request;
   browserProcessHandler->SendMessage(jsonRequest.dump());
   return request.id;
 }
 
-std::optional<UUID> BrowserHandler::SendRpcRequest(std::string methodName) {
-  return this->SendRpcRequest(methodName, json::object());
+std::optional<UUID> BrowserHandler::SendRpcRequest(
+    CefRefPtr<CefBrowser> browser,
+    std::string methodName) {
+  return this->SendRpcRequest(browser, methodName, json::object());
 }
 
 CefRefPtr<CefRenderHandler> BrowserHandler::GetRenderHandler() {
@@ -71,7 +80,7 @@ CefRefPtr<CefLoadHandler> BrowserHandler::GetLoadHandler() {
 }
 
 bool BrowserHandler::OnProcessMessageReceived(
-    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     CefProcessId source_process,
     CefRefPtr<CefProcessMessage> message) {
@@ -87,12 +96,12 @@ bool BrowserHandler::OnProcessMessageReceived(
   return false;
 }
 
-void BrowserHandler::GetViewRect(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::GetViewRect(CefRefPtr<CefBrowser> browser,
                                  CefRect& rect) {
-  if (this->browser == nullptr) {
+  if (!createdAt.has_value()) {
     rect = initialPageRectangle;
   } else {
-    std::optional<UUID> requestId = this->SendRpcRequest("GetViewRect");
+    std::optional<UUID> requestId = this->SendRpcRequest(browser, "GetViewRect");
     CefRect currentPageRectangle =
         browserProcessHandler->BrowserProcessHandler::WaitForResponse<CefRect>(
             requestId.value());
@@ -100,7 +109,7 @@ void BrowserHandler::GetViewRect(CefRefPtr<CefBrowser> browser_,
   }
 }
 
-void BrowserHandler::OnPaint(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnPaint(CefRefPtr<CefBrowser> browser,
                              PaintElementType type,
                              const RectList& dirtyRects,
                              const void* buffer,
@@ -145,7 +154,7 @@ void BrowserHandler::OnPaint(CefRefPtr<CefBrowser> browser_,
   }
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnPaint", jsonArguments);
+      this->SendRpcRequest(browser, "OnPaint", jsonArguments);
   if (!requestId.has_value()) {
     CloseHandle(fileMapping);
     return;
@@ -154,7 +163,7 @@ void BrowserHandler::OnPaint(CefRefPtr<CefBrowser> browser_,
   CloseHandle(fileMapping);
 }
 
-void BrowserHandler::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
                                         PaintElementType type,
                                         const RectList& dirtyRects,
                                         const CefAcceleratedPaintInfo& info) {
@@ -174,14 +183,14 @@ void BrowserHandler::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser_,
   arguments.sharedTextureHandle = reinterpret_cast<uintptr_t>(duplicateHandle);
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnAcceleratedPaint", jsonArguments);
+      this->SendRpcRequest(browser, "OnAcceleratedPaint", jsonArguments);
   if (!requestId.has_value()) {
     return;
   }
   browserProcessHandler->WaitForResponse<std::monostate>(requestId.value());
 }
 
-void BrowserHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
                                             const CefString& selected_text,
                                             const CefRange& selected_range) {
   Browser_OnTextSelectionChanged arguments;
@@ -189,15 +198,15 @@ void BrowserHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser_,
   arguments.selectedRangeFrom = selected_range.from;
   arguments.selectedRangeTo = selected_range.to;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnTextSelectionChanged", jsonArguments);
+  this->SendRpcRequest(browser, "OnTextSelectionChanged", jsonArguments);
 }
 
-bool BrowserHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser_,
+bool BrowserHandler::GetScreenInfo(CefRefPtr<CefBrowser> browser,
                                    CefScreenInfo& screen_info) {
   return false;
 }
 
-bool BrowserHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser_,
+bool BrowserHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser,
                                     int viewX,
                                     int viewY,
                                     int& screenX,
@@ -206,7 +215,7 @@ bool BrowserHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser_,
   arguments.view = CefPoint(viewX, viewY);
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("GetScreenPoint", jsonArguments);
+      this->SendRpcRequest(browser, "GetScreenPoint", jsonArguments);
   if (!requestId.has_value()) {
     return false;
   }
@@ -220,39 +229,39 @@ bool BrowserHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser_,
   return true;
 }
 
-void BrowserHandler::OnPopupShow(CefRefPtr<CefBrowser> browser_, bool show) {
+void BrowserHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) {
   Browser_OnPopupShow arguments;
   arguments.show = show;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnPopupShow", jsonArguments);
+  this->SendRpcRequest(browser, "OnPopupShow", jsonArguments);
 }
 
-void BrowserHandler::OnPopupSize(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnPopupSize(CefRefPtr<CefBrowser> browser,
                                  const CefRect& rect) {
   Browser_OnPopupSize arguments;
   arguments.rectangle = rect;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnPopupSize", jsonArguments);
+  this->SendRpcRequest(browser, "OnPopupSize", jsonArguments);
 }
 
-void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser,
                                      CefRefPtr<CefFrame> frame,
                                      const CefString& url) {
   Browser_OnAddressChange arguments;
   arguments.url = url.ToString();
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnAddressChange", jsonArguments);
+  this->SendRpcRequest(browser, "OnAddressChange", jsonArguments);
 }
 
-void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
                                    const CefString& title) {
   Browser_OnTitleChange arguments;
   arguments.title = title.ToString();
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnTitleChange", jsonArguments);
+  this->SendRpcRequest(browser, "OnTitleChange", jsonArguments);
 }
 
-bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
+bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                                       cef_log_severity_t level,
                                       const CefString& message,
                                       const CefString& source,
@@ -263,30 +272,30 @@ bool BrowserHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser_,
   arguments.source = source.ToString();
   arguments.line = line;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnConsoleMessage", jsonArguments);
+  this->SendRpcRequest(browser, "OnConsoleMessage", jsonArguments);
   return true;
 }
 
-void BrowserHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnLoadingProgressChange(CefRefPtr<CefBrowser> browser,
                                              double progress) {
   Browser_OnLoadingProgressChange arguments;
   arguments.progress = progress;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnLoadingProgressChange", jsonArguments);
+  this->SendRpcRequest(browser, "OnLoadingProgressChange", jsonArguments);
 }
 
 void BrowserHandler::OnFaviconURLChange(
-    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefBrowser> browser,
     const std::vector<CefString>& icon_urls) {
   Browser_OnFaviconUrlChange arguments;
   for (const auto& url : icon_urls) {
     arguments.iconUrls.push_back(url.ToString());
   }
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnFaviconUrlChange", jsonArguments);
+  this->SendRpcRequest(browser, "OnFaviconUrlChange", jsonArguments);
 }
 
-bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
+bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
                                     CefCursorHandle cursor,
                                     cef_cursor_type_t type,
                                     const CefCursorInfo& custom_cursor_info) {
@@ -294,17 +303,18 @@ bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser_,
   arguments.cursorHandle = reinterpret_cast<uintptr_t>(cursor);
   arguments.cursorType = static_cast<int>(type);
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnCursorChange", jsonArguments);
+  this->SendRpcRequest(browser, "OnCursorChange", jsonArguments);
   return true;
 }
 
-bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser_) {
+bool BrowserHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   return false;
 }
 
-void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
-  browserProcessHandler->RemoveBrowserHandler(browser_->GetIdentifier());
-  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforeClose");
+void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+  this->MarkDestroyed();
+  browserProcessHandler->RemoveBrowserHandler(browser->GetIdentifier());
+  std::optional<UUID> requestId = this->SendRpcRequest(browser, "OnBeforeClose");
   if (!requestId.has_value()) {
     return;
   }
@@ -312,7 +322,7 @@ void BrowserHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser_) {
 }
 
 bool BrowserHandler::OnBeforePopup(
-    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     int popup_id,
     const CefString& target_url,
@@ -332,7 +342,7 @@ bool BrowserHandler::OnBeforePopup(
   arguments.userGesture = user_gesture;
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnBeforePopup", jsonArguments);
+      this->SendRpcRequest(browser, "OnBeforePopup", jsonArguments);
   if (!requestId.has_value()) {
     return true;
   }
@@ -342,7 +352,7 @@ bool BrowserHandler::OnBeforePopup(
 }
 
 bool BrowserHandler::OnBeforeBrowse(
-    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefRequest> request,
     bool user_gesture,
@@ -362,7 +372,7 @@ bool BrowserHandler::OnBeforeBrowse(
   arguments.resourceType = static_cast<int>(request->GetResourceType());
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnBeforeBrowse", jsonArguments);
+      this->SendRpcRequest(browser, "OnBeforeBrowse", jsonArguments);
   if (!requestId.has_value()) {
     return false;
   }
@@ -372,7 +382,7 @@ bool BrowserHandler::OnBeforeBrowse(
 }
 
 bool BrowserHandler::OnOpenURLFromTab(
-    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     const CefString& target_url,
     CefLifeSpanHandler::WindowOpenDisposition target_disposition,
@@ -383,7 +393,7 @@ bool BrowserHandler::OnOpenURLFromTab(
   arguments.userGesture = user_gesture;
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnOpenUrlFromTab", jsonArguments);
+      this->SendRpcRequest(browser, "OnOpenUrlFromTab", jsonArguments);
   if (!requestId.has_value()) {
     return true;
   }
@@ -392,7 +402,7 @@ bool BrowserHandler::OnOpenURLFromTab(
   return result.value_or(true);
 }
 
-void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
                                          CefRefPtr<CefFrame> frame,
                                          CefRefPtr<CefContextMenuParams> params,
                                          CefRefPtr<CefMenuModel> model) {
@@ -405,7 +415,7 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
   arguments.nodeEditFlags = static_cast<int>(params->GetEditStateFlags());
   arguments.selectionText = params->GetSelectionText().ToString();
   json jsonArguments = arguments;
-  std::optional<UUID> requestId = this->SendRpcRequest("OnBeforeContextMenu", jsonArguments);
+  std::optional<UUID> requestId = this->SendRpcRequest(browser, "OnBeforeContextMenu", jsonArguments);
   if (!requestId.has_value()) {
     return;
   }
@@ -424,7 +434,7 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser_,
 }
 
 bool BrowserHandler::RunContextMenu(
-    CefRefPtr<CefBrowser> browser_,
+    CefRefPtr<CefBrowser> browser,
     CefRefPtr<CefFrame> frame,
     CefRefPtr<CefContextMenuParams> params,
     CefRefPtr<CefMenuModel> model,
@@ -432,7 +442,7 @@ bool BrowserHandler::RunContextMenu(
   return false;
 }
 
-bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser_,
+bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
                                          CefRefPtr<CefFrame> frame,
                                          CefRefPtr<CefContextMenuParams> params,
                                          int commandId,
@@ -441,7 +451,7 @@ bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser_,
   arguments.commandId = commandId;
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnContextMenuCommand", jsonArguments);
+      this->SendRpcRequest(browser, "OnContextMenuCommand", jsonArguments);
   if (!requestId.has_value()) {
     return false;
   }
@@ -450,7 +460,7 @@ bool BrowserHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser_,
   return result.value_or(false);
 }
 
-void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                           bool isLoading,
                                           bool canGoBack,
                                           bool canGoForward) {
@@ -459,10 +469,10 @@ void BrowserHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser_,
   arguments.canGoBack = canGoBack;
   arguments.canGoForward = canGoForward;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnLoadingStateChange", jsonArguments);
+  this->SendRpcRequest(browser, "OnLoadingStateChange", jsonArguments);
 }
 
-void BrowserHandler::OnLoadStart(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnLoadStart(CefRefPtr<CefBrowser> browser,
                                  CefRefPtr<CefFrame> frame,
                                  TransitionType transition_type) {
   if (!frame->IsMain()) {
@@ -472,10 +482,10 @@ void BrowserHandler::OnLoadStart(CefRefPtr<CefBrowser> browser_,
   arguments.transitionType = static_cast<int>(transition_type);
   json jsonArguments = arguments;
   std::optional<UUID> requestId =
-      this->SendRpcRequest("OnLoadStart", jsonArguments);
+      this->SendRpcRequest(browser, "OnLoadStart", jsonArguments);
 }
 
-void BrowserHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                                CefRefPtr<CefFrame> frame,
                                int httpStatusCode) {
   if (!frame->IsMain()) {
@@ -484,10 +494,10 @@ void BrowserHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser_,
   Browser_OnLoadEnd arguments;
   arguments.httpStatusCode = httpStatusCode;
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnLoadEnd", jsonArguments);
+  this->SendRpcRequest(browser, "OnLoadEnd", jsonArguments);
 }
 
-void BrowserHandler::OnLoadError(CefRefPtr<CefBrowser> browser_,
+void BrowserHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
                                  CefRefPtr<CefFrame> frame,
                                  ErrorCode errorCode,
                                  const CefString& errorText,
@@ -500,14 +510,14 @@ void BrowserHandler::OnLoadError(CefRefPtr<CefBrowser> browser_,
   arguments.errorText = errorText.ToString();
   arguments.failedUrl = failedUrl.ToString();
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnLoadError", jsonArguments);
+  this->SendRpcRequest(browser, "OnLoadError", jsonArguments);
 }
 
-bool BrowserHandler::OnTooltip(CefRefPtr<CefBrowser> browser_,
+bool BrowserHandler::OnTooltip(CefRefPtr<CefBrowser> browser,
                                CefString& text) {
   Browser_OnTooltip arguments;
   arguments.text = text.ToString();
   json jsonArguments = arguments;
-  this->SendRpcRequest("OnTooltip", jsonArguments);
+  this->SendRpcRequest(browser, "OnTooltip", jsonArguments);
   return true;
 }

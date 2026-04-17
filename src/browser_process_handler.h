@@ -55,7 +55,7 @@ public:
   ThreadSafeQueue<std::string> outgoingMessageQueue;
   SDL_Mutex* responseMapMutex = nullptr;
   std::map<UUID, std::unique_ptr<ResponseEntry>> responseEntries;
-  std::map<int, CefRefPtr<BrowserHandler>> browserHandlers;
+  std::map<int, std::pair<CefRefPtr<BrowserHandler>, CefRefPtr<CefBrowser>>> browserEntries;
   bool isShuttingDown;
 
   NET_Server* socketServer;
