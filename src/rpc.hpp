@@ -683,77 +683,36 @@ inline void to_json(json& j, const Browser_OnBeforeBrowse& m) {
   j["resourceType"] = m.resourceType;
 }
 
-struct Browser_OnHistoryPushState {
+struct Browser_OnProgrammaticModifyHistory {
+  std::string action;
   std::string url;
   std::string state;
 };
 
-inline void to_json(json& j, const Browser_OnHistoryPushState& m) {
+inline void to_json(json& j, const Browser_OnProgrammaticModifyHistory& m) {
   j = json::object();
+  j["action"] = m.action;
   j["url"] = m.url;
   j["state"] = m.state;
 }
 
-struct Browser_OnHistoryReplaceState {
-  std::string url;
-  std::string state;
+struct Browser_OnProgrammaticNavigate {
+  std::string action;
+  std::optional<std::string> url;
+  std::optional<std::string> state;
+  std::optional<std::string> info;
+  std::optional<std::string> history;
+  std::optional<int> delta;
+  std::optional<std::string> key;
 };
 
-inline void to_json(json& j, const Browser_OnHistoryReplaceState& m) {
+inline void to_json(json& j, const Browser_OnProgrammaticNavigate& m) {
   j = json::object();
-  j["url"] = m.url;
-  j["state"] = m.state;
-}
-
-struct Browser_OnHistoryGo {
-  int delta;
-};
-
-inline void to_json(json& j, const Browser_OnHistoryGo& m) {
-  j = json::object();
-  j["delta"] = m.delta;
-}
-
-struct Browser_OnNavigationNavigate {
-  std::string url;
-  std::string state;
-  std::string info;
-  std::string history;
-};
-
-inline void to_json(json& j, const Browser_OnNavigationNavigate& m) {
-  j = json::object();
-  j["url"] = m.url;
-  j["state"] = m.state;
-  j["info"] = m.info;
-  j["history"] = m.history;
-}
-
-struct Browser_OnNavigationTraverseTo {
-  std::string key;
-  std::string info;
-};
-
-inline void to_json(json& j, const Browser_OnNavigationTraverseTo& m) {
-  j = json::object();
-  j["key"] = m.key;
-  j["info"] = m.info;
-}
-
-struct Browser_OnNavigationBack {
-  std::string info;
-};
-
-inline void to_json(json& j, const Browser_OnNavigationBack& m) {
-  j = json::object();
-  j["info"] = m.info;
-}
-
-struct Browser_OnNavigationForward {
-  std::string info;
-};
-
-inline void to_json(json& j, const Browser_OnNavigationForward& m) {
-  j = json::object();
-  j["info"] = m.info;
+  j["action"] = m.action;
+  if (m.url) j["url"] = *m.url;
+  if (m.state) j["state"] = *m.state;
+  if (m.info) j["info"] = *m.info;
+  if (m.history) j["history"] = *m.history;
+  if (m.delta) j["delta"] = *m.delta;
+  if (m.key) j["key"] = *m.key;
 }
