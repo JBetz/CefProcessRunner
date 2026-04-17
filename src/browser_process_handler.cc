@@ -369,14 +369,14 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
     if (!browserHandler) {
       std::string message = "Browser handler for browser instance " +
                             std::to_string(request.instanceId) + " not found.";
-      this->SendErrorMessage(request.id, message);
+      this->SendErrorResponse(request.id, message);
       return;
     }
     CefRefPtr<CefBrowser> browser = this->GetBrowser(request.instanceId);
     if (!browser) {
       std::string message = "Browser instance " +
                             std::to_string(request.instanceId) + " not found.";
-      this->SendErrorMessage(request.id, message);
+      this->SendErrorResponse(request.id, message);
       return;
     }
 
