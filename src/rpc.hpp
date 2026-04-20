@@ -325,6 +325,32 @@ inline void from_json(const json& j, Browser_LoadUrl& m) {
   j.at("url").get_to(m.url);
 }
 
+struct PostDataElement {
+  CefPostDataElement::Type type;
+  std::optional<std::string> fileName;
+  std::optional<std::vector<uint8_t>> bytes;
+};
+
+inline void from_json(const json& j, PostDataElement& m) {
+  j.at("type").get_to(m.type);
+  j.at("fileName").get_to(m.fileName);
+  j.at("bytes").get_to(m.bytes);
+}
+
+struct Browser_LoadRequest {
+  std::string url;
+  std::string method;
+  std::vector<PostDataElement> postData;
+  std::map<std::string, std::string> headerMap;
+};
+
+inline void from_json(const json& j, Browser_LoadRequest& m) {
+  j.at("url").get_to(m.url);
+  j.at("method").get_to(m.method);
+  j.at("postData").get_to(m.postData);
+  j.at("headerMap").get_to(m.headerMap);
+}
+
 struct Browser_SetFrameRate {
   int frameRate;
 };

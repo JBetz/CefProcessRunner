@@ -414,6 +414,39 @@ void BrowserProcessHandler::HandleRpcRequest(RpcRequest request) {
       return;
     }
 
+    if (request.methodName == "LoadRequest") {
+      Browser_LoadRequest arguments =
+          request.arguments.get<Browser_LoadRequest>();
+      CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+      CefRefPtr<CefRequest> cefRequest = CefRequest::Create();
+      cefRequest->SetURL(arguments.url);
+      cefRequest->SetMethod(arguments.method);
+      if (arguments.postData.size() > 0) {
+        CefRefPtr<CefPostData> postData = CefPostData::Create();
+        for (const auto& elementArguments : arguments.postData) {
+          CefRefPtr<CefPostDataElement> element = CefPostDataElement::Create();
+          switch (elementArguments.type) {
+            case CefPostDataElement::Type::PDE_TYPE_EMPTY:
+              element->SetToEmpty();
+              break;
+            case CefPostDataElement::Type::PDE_TYPE_FILE:
+              element->SetToFile(elementArguments.fileName.value());
+              break;
+            case CefPostDataElement::Type::PDE_TYPE_BYTES:
+              element->SetToBytes(elementArguments.bytes->size(), elementArguments.bytes->data());
+              break;
+          }
+          postData->AddElement(element);
+        }
+        cefRequest->SetPostData(postData);
+      } 
+      for (const auto& [key, value] : arguments.headerMap) {
+        cefRequest->SetHeaderByName(key, value, true);
+      }
+      frame->LoadRequest(cefRequest);
+      return;
+    }
+
     if (request.methodName == "WasResized") {
       browser->GetHost()->WasResized();
       return;
