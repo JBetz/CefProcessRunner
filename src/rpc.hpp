@@ -386,15 +386,18 @@ inline void to_json(json& j, const Browser_OnTextSelectionChanged& m) {
 }
 
 struct Browser_OnCursorChange {
-  uintptr_t cursorHandle;
   int cursorType;
   std::optional<CefCursorInfo> customCursorInfo;
 };
 
 inline void to_json(json& j, const Browser_OnCursorChange& m) {
   j = json::object();
-  j["cursorHandle"] = m.cursorHandle;
   j["cursorType"] = m.cursorType;
+  if (m.customCursorInfo.has_value()) {
+    j["customCursorInfo"] = m.customCursorInfo.value();
+  } else {
+    j["customCursorInfo"] = nullptr;
+  }
 }
 
 struct Browser_OnAddressChange {

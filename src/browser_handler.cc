@@ -303,7 +303,6 @@ bool BrowserHandler::OnCursorChange(CefRefPtr<CefBrowser> browser,
                                     cef_cursor_type_t type,
                                     const CefCursorInfo& custom_cursor_info) {
   Browser_OnCursorChange arguments;
-  arguments.cursorHandle = reinterpret_cast<uintptr_t>(cursor);
   arguments.cursorType = static_cast<int>(type);
   json jsonArguments = arguments;
   this->SendRpcRequest(browser, "OnCursorChange", jsonArguments);
