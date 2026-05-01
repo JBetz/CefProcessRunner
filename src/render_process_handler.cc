@@ -171,17 +171,19 @@ class HistoryHandler : public CefV8Handler {
       request.id = CreateUuid();
       request.className = "Browser";
       request.instanceId = frame->GetBrowser()->GetIdentifier();
-      request.methodName = "OnProgrammaticModifyHistory";
-      Browser_OnProgrammaticModifyHistory args;
-      args.action = arguments[0]->GetStringValue().ToString();
+      std::string action = arguments[0]->GetStringValue().ToString();
 
-      if (args.action == "pushState") {
-        args.url = arguments[1]->GetStringValue().ToString();
-        args.state = arguments[2]->GetStringValue().ToString();
+      if (action == "pushState") {
+        request.methodName = "OnPushState";  
+        Browser_OnPushState args;
+        args.state = arguments[1]->GetStringValue().ToString();
+        args.url = arguments[2]->GetStringValue().ToString();
         request.arguments = args;
-      } else if (args.action == "replaceState") {
-        args.url = arguments[1]->GetStringValue().ToString();
-        args.state = arguments[2]->GetStringValue().ToString();
+      } else if (action == "replaceState") {
+        request.methodName = "OnReplaceState";
+        Browser_OnReplaceState args;
+        args.state = arguments[1]->GetStringValue().ToString();
+        args.url = arguments[2]->GetStringValue().ToString();
         request.arguments = args;
       } else {
         return false;
@@ -214,26 +216,32 @@ class NavigationHandler : public CefV8Handler {
       request.id = CreateUuid();
       request.className = "Browser";
       request.instanceId = frame->GetBrowser()->GetIdentifier();
-      request.methodName = "OnProgrammaticNavigate";
-      Browser_OnProgrammaticNavigate args;
-      args.action = arguments[0]->GetStringValue().ToString();
+      std::string action = arguments[0]->GetStringValue().ToString();
 
-      if (args.action == "url") {
+      if (action == "url") {
+        request.methodName = "OnNavigateByUrl";
+        Browser_OnNavigateByUrl args;
         args.url = arguments[1]->GetStringValue().ToString();
         args.state = arguments[2]->GetStringValue().ToString();
         args.info = arguments[3]->GetStringValue().ToString();
         args.history = arguments[4]->GetStringValue().ToString();
-      } else if (args.action == "delta") {
+        request.arguments = args;
+      } else if (action == "delta") {
+        request.methodName = "OnNavigateByDelta";
+        Browser_OnNavigateByDelta args;
         args.delta = arguments[1]->GetIntValue();
         args.info = arguments[2]->GetStringValue().ToString();
-      } else if (args.action == "key") {
+        request.arguments = args;
+      } else if (action == "key") {
+        request.methodName = "OnNavigateByKey";
+        Browser_OnNavigateByKey args;
         args.key = arguments[1]->GetStringValue().ToString();
         args.info = arguments[2]->GetStringValue().ToString();
+        request.arguments = args;
       } else {
         return false;
       }
 
-      request.arguments = args;
       json jsonRequest = request;
       CefRefPtr<CefProcessMessage> message =
           CefProcessMessage::Create(kOnNavigationMessage);
@@ -314,24 +322,37 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
   std::string shimScript = R"(
     (function(modifyHistory, navigate) {
       let _state = history.state;
-      Object.defineProperty(history, 'state', { get: () => _state });
+      Object.defineProperty(history, 'state', { 
+        get: () => _state 
+      });
       Object.defineProperty(history, '_setState', {
-        value: function(state) { _state = state; },
+        value: function(state) { 
+          _state = state; 
+        },
         enumerable: false
       });
-      history.pushState = function(state, title, url) {
+      history.pushState = function(state, unused, url) {
         _state = state;
-        modifyHistory('pushState', String(url || ''), JSON.stringify(state));
+        modifyHistory('pushState', JSON.stringify(state), String(url || ''));
       };
-      history.replaceState = function(state, title, url) {
+      history.replaceState = function(state, unused, url) {
         _state = state;
-        modifyHistory('replaceState', String(url || ''), JSON.stringify(state));
+        modifyHistory('replaceState', JSON.stringify(state), String(url || ''));
       };
-      history.back = function() { navigate('delta', -1); };
-      history.forward = function() { navigate('delta', 1); };
-      history.go = function(delta) { navigate('delta', delta || 0); };
+      history.back = function() { 
+        navigate('delta', -1, null);
+      };
+      history.forward = function() {
+        navigate('delta', 1, null); 
+      };
+      history.go = function(delta) { 
+        navigate('delta', delta || 0, null);
+      };
 
-      const resolved = { committed: Promise.resolve(), finished: Promise.resolve() };
+      const resolved = { 
+        committed: Promise.resolve(),
+        finished: Promise.resolve()
+      };
       navigation.navigate = function(url, options) {
         var opts = options || {};
         navigate(

@@ -709,36 +709,61 @@ inline void to_json(json& j, const Browser_OnBeforeBrowse& m) {
   j["resourceType"] = m.resourceType;
 }
 
-struct Browser_OnProgrammaticModifyHistory {
-  std::string action;
-  std::string url;
+struct Browser_OnPushState {
   std::string state;
+  std::string url;
 };
 
-inline void to_json(json& j, const Browser_OnProgrammaticModifyHistory& m) {
+inline void to_json(json& j, const Browser_OnPushState& m) {
   j = json::object();
-  j["action"] = m.action;
-  j["url"] = m.url;
   j["state"] = m.state;
+  j["url"] = m.url;
 }
 
-struct Browser_OnProgrammaticNavigate {
-  std::string action;
-  std::optional<std::string> url;
-  std::optional<std::string> state;
-  std::optional<std::string> info;
-  std::optional<std::string> history;
-  std::optional<int> delta;
-  std::optional<std::string> key;
+struct Browser_OnReplaceState {
+  std::string state;
+  std::string url;
 };
 
-inline void to_json(json& j, const Browser_OnProgrammaticNavigate& m) {
+inline void to_json(json& j, const Browser_OnReplaceState& m) {
   j = json::object();
-  j["action"] = m.action;
-  if (m.url) j["url"] = *m.url;
-  if (m.state) j["state"] = *m.state;
-  if (m.info) j["info"] = *m.info;
-  if (m.history) j["history"] = *m.history;
-  if (m.delta) j["delta"] = *m.delta;
-  if (m.key) j["key"] = *m.key;
+  j["state"] = m.state;
+  j["url"] = m.url;
+}
+
+struct Browser_OnNavigateByUrl {
+  std::string url;
+  std::string state;
+  std::string history;
+  std::string info;
+};
+
+inline void to_json(json& j, const Browser_OnNavigateByUrl& m) {
+  j = json::object();
+  j["url"] = m.url;
+  j["state"] = m.state;
+  j["history"] = m.history;
+  j["info"] = m.info;
+}
+
+struct Browser_OnNavigateByDelta {
+  int delta;
+  std::string info;
+};
+
+inline void to_json(json& j, const Browser_OnNavigateByDelta& m) {
+  j = json::object();
+  j["delta"] = m.delta;
+  j["info"] = m.info;
+}
+
+struct Browser_OnNavigateByKey {
+  std::string key;
+  std::string info;
+};
+
+inline void to_json(json& j, const Browser_OnNavigateByKey& m) {
+  j = json::object();
+  j["key"] = m.key;
+  j["info"] = m.info;
 }
