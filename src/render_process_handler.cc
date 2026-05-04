@@ -23,6 +23,7 @@ const char kOnHistoryMessage[] = "RenderProcessHandler.OnHistory";
 const char kOnNavigationMessage[] = "RenderProcessHandler.OnNavigation";
 const char kOnMessageMessage[] = "RenderProcessHandler.OnMessage";
 const char kOnEvalMessage[] = "RenderProcessHandler.OnEval";
+const char kOnConsoleMessageMessage[] = "RenderProcessHandler.OnConsoleMessage";
 
 RenderProcessHandler::RenderProcessHandler() {}
 
@@ -297,6 +298,64 @@ class FocusOutHandler : public CefV8Handler {
    IMPLEMENT_REFCOUNTING(FocusOutHandler);
 };
 
+
+class ConsoleHandler : public CefV8Handler {
+ public:
+  ConsoleHandler() {}
+
+  bool Execute(const CefString& name,
+               CefRefPtr<CefV8Value> object,
+               const CefV8ValueList& arguments,
+               CefRefPtr<CefV8Value>& retval,
+               CefString& exception) override {
+    CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
+    CefRefPtr<CefFrame> frame = context->GetFrame();
+    CefRefPtr<CefV8Value> window = context->GetGlobal();
+    CefRefPtr<CefV8Value> jsonObj = window->GetValue("JSON");
+    CefRefPtr<CefV8Value> stringifyFn = jsonObj->GetValue("stringify");
+
+    RpcRequest request;
+    request.id = CreateUuid();
+    request.className = "Browser";
+    request.methodName = "OnConsoleMessage";
+    request.instanceId = frame->GetBrowser()->GetIdentifier();
+    Browser_OnConsoleMessage args;
+    args.level = name == "error" ? LOGSEVERITY_ERROR
+               : name == "warn" ? LOGSEVERITY_WARNING
+               : name == "debug" ? LOGSEVERITY_DEBUG
+               : LOGSEVERITY_INFO;
+    std::string combined;
+    for (size_t i = 0; i < arguments.size(); ++i) {
+      if (i > 0)
+        combined += " ";
+      if (arguments[i]->IsString()) {
+        combined += arguments[i]->GetStringValue().ToString();
+      } else {
+        CefV8ValueList stringifyArgs;
+        stringifyArgs.push_back(arguments[i]);
+        CefRefPtr<CefV8Value> result =
+            stringifyFn->ExecuteFunction(jsonObj, stringifyArgs);
+        if (result && result->IsString()) {
+          combined += result->GetStringValue().ToString();
+        }
+      }
+    }
+    args.message = combined;
+    args.source = "";
+    args.line = 0;
+    request.arguments = args;
+    json jsonRequest = request;
+    CefRefPtr<CefProcessMessage> message =
+        CefProcessMessage::Create(kOnConsoleMessageMessage);
+    message->GetArgumentList()->SetString(0, jsonRequest.dump());
+    frame->SendProcessMessage(PID_BROWSER, message);
+    return true;
+  }
+
+  IMPLEMENT_REFCOUNTING(ConsoleHandler);
+};
+
+
 void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
                                             CefRefPtr<CefFrame> frame,
                                             CefRefPtr<CefV8Context> context) {
@@ -312,7 +371,7 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
       ->ExecuteFunction(window, mouseOverArguments);
 
   // history and navigation API shims
- CefRefPtr<CefV8Handler> modifyHistoryHandler = new HistoryHandler();
+  CefRefPtr<CefV8Handler> modifyHistoryHandler = new HistoryHandler();
   CefRefPtr<CefV8Handler> navigateHandler = new NavigationHandler();
   CefRefPtr<CefV8Value> onProgrammaticModifyHistory =
       CefV8Value::CreateFunction("modifyHistory", modifyHistoryHandler);
@@ -383,9 +442,8 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
 
   CefRefPtr<CefV8Value> shimFunction;
   CefRefPtr<CefV8Exception> shimException;
-  bool shimSuccess =
-      context->Eval(CefString(shimScript), CefString(""), 0,
-                    shimFunction, shimException);
+  bool shimSuccess = context->Eval(CefString(shimScript), CefString(""), 0,
+                                   shimFunction, shimException);
   if (shimSuccess && shimFunction->IsFunction()) {
     CefV8ValueList shimArgs;
     shimArgs.push_back(onProgrammaticModifyHistory);
@@ -411,6 +469,19 @@ void RenderProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser,
       CefV8Value::CreateFunction("onMessage", messageHandler));
   window->GetValue("addEventListener")
       ->ExecuteFunction(window, messageArguments);
+
+  // console
+  CefRefPtr<CefV8Handler> consoleHandler = new ConsoleHandler();
+  CefRefPtr<CefV8Value> console = window->GetValue("console");
+  if (console && console->IsObject()) {
+    for (const char* method : {"log", "warn", "error", "info", "debug"}) {
+        console->SetValue(method,
+                      CefV8Value::CreateFunction(method, consoleHandler),
+                      V8_PROPERTY_ATTRIBUTE_NONE);
+    }
+  } else {
+    SDL_Log("No console object :(");
+  }
 }
 
 void RenderProcessHandler::OnContextReleased(CefRefPtr<CefBrowser> browser,
