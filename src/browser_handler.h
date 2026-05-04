@@ -71,9 +71,6 @@ class BrowserHandler : public CefClient,
                               const CefRange& selected_range) override;
 
   // CefDisplayHandler:
-  void OnAddressChange(CefRefPtr<CefBrowser> browser,
-                       CefRefPtr<CefFrame> frame,
-                       const CefString& url) override;
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
                      const CefString& title) override;
   bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,

@@ -247,15 +247,6 @@ void BrowserHandler::OnPopupSize(CefRefPtr<CefBrowser> browser,
   this->SendRpcRequest(browser, "OnPopupSize", jsonArguments);
 }
 
-void BrowserHandler::OnAddressChange(CefRefPtr<CefBrowser> browser,
-                                     CefRefPtr<CefFrame> frame,
-                                     const CefString& url) {
-  Browser_OnAddressChange arguments;
-  arguments.url = url.ToString();
-  json jsonArguments = arguments;
-  this->SendRpcRequest(browser, "OnAddressChange", jsonArguments);
-}
-
 void BrowserHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
                                    const CefString& title) {
   Browser_OnTitleChange arguments;
@@ -430,7 +421,6 @@ void BrowserHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
   model->Clear();
   ContextMenuConfiguration config = result.value();
   for (const auto& command : config.commands) {
-      SDL_Log(command.label.c_str());
       model->InsertItemAt(command.index, command.commandId, command.label);
   }
 }
